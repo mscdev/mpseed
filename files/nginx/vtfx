@@ -1,0 +1,58 @@
+upstream django {
+
+    server unix:///run/uwsgi/app/vtfx/socket;
+    #server 127.0.0.01:8001; 
+}
+
+server {
+        server_name localhost;
+        listen 80;
+
+
+        location /media {
+                alias /var/www/vtfx/media;
+                location ~*  \.(jpg|jpeg|png|gif|ico|css|js)$ {
+                         expires 365d;
+                }
+        }
+
+        location /static {
+                alias /var/www/vtfx/static;
+                location ~*  \.(jpg|jpeg|png|gif|ico|css|js|woff|eot|svg)$ {
+                         expires 365d;
+                }
+        }
+
+        location /robots.txt {
+                alias /var/www/vtfx/static/robots.txt;
+        }
+
+        location /favicon.ico {
+                alias /var/www/vtfx/static/favicon.ico;
+        }
+
+        access_log  /var/log/nginx/vtfx-access.log;
+        error_log   /var/log/nginx/vtfx-error.log;
+
+        location / {
+        if (-f /var/www/vtfx/maintenance) {
+            return 503;
+        }
+
+            uwsgi_pass django;
+            include uwsgi_params;
+        }
+
+
+        error_page 503 @maintenance;
+
+        location @maintenance {
+                root /var/www/vtfx;
+                if ($uri !~ ^/util/static) { 
+                    rewrite ^(.*)$ /static/503.html break;
+                }
+                
+            
+        }
+}
+
