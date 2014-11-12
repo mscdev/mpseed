@@ -1,0 +1,5 @@
+# Just fork me
+
+    git remote add mpseed mpadulo@code.mainstorconcept.de:/git/mpseed.git
+    git remote set-url --push mpseed no-pushing # Avoid accidental pushings to
+    remote
