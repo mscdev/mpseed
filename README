@@ -1,5 +1,16 @@
+# Use me as a submodule (optimal)
+    git submodule add mpadulo@code.mainstorconcept.de:/git/mpseed
+
 # Just fork me
 
+__WARNING:__When using remotes they are meant mainly for branches of the same
+project. So it maybe isn't the best idea
+
     git remote add mpseed mpadulo@code.mainstorconcept.de:/git/mpseed.git
-    git remote set-url --push mpseed no-pushing # Avoid accidental pushings to
-    remote
+
+    # OPTION 1:Avoid accidental pushings to remote, and pull direct to master
+    git remote set-url --push mpseed no-pushing 
+
+    # OPTION 2: Create a local tracking branch, and merge only local branches
+    git fetch mpseed # Downloads the remote
+    git checkout -b mpseed mpseed/master
