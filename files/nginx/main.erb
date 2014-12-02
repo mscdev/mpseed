@@ -1,0 +1,58 @@
+upstream django {
+
+    server unix:///run/uwsgi/app/<%= @project %>/socket;
+    #server 127.0.0.01:8001; 
+}
+
+server {
+        server_name localhost;
+        listen 80;
+
+
+        location /media {
+                alias /var/www/<%= @project %>/media;
+                location ~*  \.(jpg|jpeg|png|gif|ico|css|js)$ {
+                         expires 365d;
+                }
+        }
+
+        location /static {
+                alias /var/www/<%= @project %>/static;
+                location ~*  \.(jpg|jpeg|png|gif|ico|css|js|woff|eot|svg)$ {
+                         expires 365d;
+                }
+        }
+
+        location /robots.txt {
+                alias /var/www/<%= @project %>/static/robots.txt;
+        }
+
+        location /favicon.ico {
+                alias /var/www/<%= @project %>/static/favicon.ico;
+        }
+
+        access_log  /var/log/nginx/<%= @project %>-access.log;
+        error_log   /var/log/nginx/<%= @project %>-error.log;
+
+        location / {
+        if (-f /var/www/<%= @project %>/maintenance) {
+            return 503;
+        }
+
+            uwsgi_pass django;
+            include uwsgi_params;
+        }
+
+
+        error_page 503 @maintenance;
+
+        location @maintenance {
+                root /var/www/<%= @project %>;
+                if ($uri !~ ^/util/static) { 
+                    rewrite ^(.*)$ /static/503.html break;
+                }
+                
+            
+        }
+}
+

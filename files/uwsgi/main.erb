@@ -1,0 +1,20 @@
+[uwsgi]
+chdir = /var/www/<%= @project %>/repo/webapp
+home = /var/www/<%= @project %>/env
+module = django.core.handlers.wsgi:WSGIHandler()
+env = DJANGO_SETTINGS_MODULE=<%= @project %>.settings
+
+master = true
+processes = 2
+threads = 2
+
+socket = /run/uwsgi/app/<%= @project %>/socket 
+chown-socket = www-data:www-data
+
+#vacuum = true
+
+logto = /var/log/uwsgi/<%= @project %>.log
+
+stats = 127.0.0.1:9191
+
+plugin = python
