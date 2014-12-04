@@ -4,7 +4,9 @@ from fabric.api import *
 from fabric.contrib.console import confirm
 from fabric.operations import sudo
 
-env.hosts = ['vtfx.dev.mainstorconcept.de']
+APP_NAME='vtfx'
+env.hosts = [APP_NAME + '.dev.mainstorconcept.de']
+
 
 def prepare_deploy():
     local("./manage.py test rating")
@@ -17,12 +19,12 @@ def merge():
     local("git push")
 
 def deploy():
-    base_dir = '/var/www/vtfx/'
+    base_dir = '/var/www/' + APP_NAME + '/'
     repo_dir = '/repo'
-    virtualenv =  '/var/www/vtfx/env'
+    virtualenv =  '/var/www/' + APP_NAME + '/env'
 
     with cd(repo_dir):
-        sudo("git pull")
+        run("git pull")
 
     with cd(base_dir):
         sudo("touch maintenance")

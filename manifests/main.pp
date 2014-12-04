@@ -5,7 +5,7 @@ $inc_file_path = '/vagrant/files' # Absolute path to the files directory
 
 $user = 'admin' # User to create
 $password = 'abcdef1' # The user's password
-
+$password_hash = '$6$AmBNh8J7nMlCZcl$kiCaNL0ex.7Oab13v1jJy5QFzdd95KjSIhNgkubjLGQhkajUC0Uw2u6pXJ.t5c9oirHctq2MmZDlEIy3P3cgt0'
 
 if $projectid == undef {
     fail("Sorry man, you suck: 'projectid fact not defined'")
@@ -16,10 +16,9 @@ $domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtua
 $db_name = "${project}" # Mysql database name to create
 $db_user = "${project}" # Mysql username to create
 $db_password = "${project}" # Mysql password for $db_user
-
-$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply /vagrant/manifests/main.pp'"
-
 $tz = 'Europe/Berlin' # Timezone
+$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply /vagrant/manifests/main.pp'"
+$fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=/var/www/${project}/repo/fabfile.py"
 
 include users
 include paquetes
@@ -27,23 +26,10 @@ include database
 include app_sources
 include virtualenv
 include app_deploy
-
 include nginx
 include uwsgi
 include timezone
 include extra_software
-
-
-class { 'python':
-    dev        => true, # install python-dev
-    pip        => true,
-    version    => 'system',
-    virtualenv => true,
-}
-
-class { 'apt':
-  always_apt_update    => true,
-}
 
 Class['apt'] -> Class['python']      
 Class['apt'] -> Class['paquetes']      
@@ -56,12 +42,21 @@ Class['apt'] -> Class['uwsgi']
 Class['apt'] -> Class['timezone']      
 Class['apt'] -> Class['extra_software']
 
+class { 'apt':
+  always_apt_update    => true,
+}
+
+class { 'python':
+    dev        => true, # install python-dev
+    pip        => true,
+    version    => 'system',
+    virtualenv => true,
+}
 
 class users {
     group { 'www-data':
         ensure => present,
     }
-
     user { 'www-data':
         ensure => present,
         groups => ['www-data'],
@@ -69,35 +64,21 @@ class users {
         shell => "/bin/bash",
         require => Group['www-data']
     }
-
     user { $user:
       ensure     => "present",
       managehome => true,
       shell => "/bin/bash",
-      password => '$6$AmBNh8J7nMlCZcl$kiCaNL0ex.7Oab13v1jJy5QFzdd95KjSIhNgkubjLGQhkajUC0Uw2u6pXJ.t5c9oirHctq2MmZDlEIy3P3cgt0',
+      password => $password_hash,
       groups => ['sudo', 'admin', 'vagrant'],
     }
-
     # SSH Keys
-    file { "/home/$user/.ssh":
-        ensure => "directory",
-        owner  => "$user",
-        group  => "$user",
-        mode   => 777,
-    }
-    file { "/home/$user/.ssh/id_rsa.pub":
-        ensure => present,
-        owner  => "$user",
-        group  => "$user",
-        mode => '0600',
-        source =>"${inc_file_path}/ssh/id_rsa.pub",
-    }
-    file { "/home/$user/.ssh/id_rsa":
-        ensure => present,
-        owner  => "$user",
-        group  => "$user",
-        mode => '0600',
-        source =>"${inc_file_path}/ssh/id_rsa",
+    file { "/home/$user/.ssh/":
+        ensure  => present,
+        owner   => "$user",
+        group   => "$user",
+        mode    => '0600',
+        source  =>"${inc_file_path}/ssh/",
+        recurse => true;
     }
     file { "/home/$user/.bash_aliases":
         ensure => "file",
@@ -105,9 +86,11 @@ class users {
         group  => "$user",
         content  => "alias wd='cd /var/www/$project/repo; source /var/www/$project/env/bin/activate'
                    \nalias run='/var/www/$project/repo/webapp/manage.py runserver 0.0.0.0:8888'
+                   \nalias ff='${fabric_local_deploy}'
                    \n${alias_run_puppet}",
         mode   => 755,
     }
+    # Be nice with vagrant user too
     file { "/home/vagrant/.bash_aliases":
         ensure => "file",
         owner  => "vagrant",
@@ -118,20 +101,20 @@ class users {
 }
 
 class virtualenv {
-    #python::virtualenv { "/var/www/${project}/env":
-    #ensure       => present,
-    #version      => 'system',
-    #requirements => "/var/www/${project}/repo/webapp/requirements.txt",
-    ##proxy        => 'http://proxy.domain.com:3128',
-    ##systempkgs   => true,
-    #distribute   => false,
-    #owner        => "$user",
-    #group        => "$user",
-    ##cwd          => '/var/www/virtualenvs/${project}',
-    #timeout      => 100,
-    #require => [Class['app_sources'], Class['database']],
-    #before => Class['app_deploy'],
-    #}
+    python::virtualenv { "/var/www/${project}/env":
+    ensure       => present,
+    version      => 'system',
+    requirements => "/var/www/${project}/repo/webapp/requirements.txt",
+    #proxy        => 'http://proxy.domain.com:3128',
+    #systempkgs   => true,
+    distribute   => false,
+    owner        => "$user",
+    group        => "$user",
+    #cwd          => '/var/www/virtualenvs/${project}',
+    timeout      => 100,
+    require => [Class['app_sources'], Class['database']],
+    before => Class['app_deploy'],
+    }
 }
 
 class paquetes {
@@ -158,16 +141,13 @@ class app_sources {
         group  => "$user",
         mode   => 755,
     }
-
     file { "/var/www/${project}/static": 
         ensure => "directory",
         mode => 777,
     }
-
     file { "/etc/puppet/hiera.yaml":
          ensure => "present",
     }
-
     file { "/var/www/${project}/repo/":
         ensure => link,
         target => '/repo/',
@@ -184,14 +164,11 @@ class app_sources {
 }
 
 class app_deploy {
-    #exec { "fab deploy:host=vagrant@localhost --password=vagrant":
-        ##cwd     => "/var/www/${project}/repo/webapp",
-        #cwd     => "/vtfx",
-        #provider=> shell,
-        #logoutput => true,
-        ##path    => ["/usr/bin", "/usr/sbin"]
-    #}
-
+    exec {$fabric_local_deploy:
+        provider=> shell,
+        logoutput => true,
+        #path    => ["/usr/bin", "/usr/sbin"]
+    }
 }
 
 class database {
@@ -206,13 +183,11 @@ class database {
         #manage_firewall            => true,
         postgres_password          => 'postgres',
     }
-
     postgresql::server::db { $db_name:
         user     => $db_user,
         password => postgresql_password($db_user, $db_password),
     }
 }
-
 
 class uwsgi {
     package { ['uwsgi', 'uwsgi-plugin-python']:
@@ -277,12 +252,10 @@ class nginx {
     }
 }
 
-
 class timezone {
   package { "tzdata":
     ensure => latest,
   }
-
   file { "/etc/localtime":
     require => Package["tzdata"],
     source => "file:///usr/share/zoneinfo/${tz}",
