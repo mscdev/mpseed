@@ -1,7 +1,17 @@
-# Use me as a submodule (optimal)
+# Submodule
+
+1. Use me as a submodule (optimal)
+
     git submodule add mpadulo@code.mainstorconcept.de:/git/mpseed
 
-# Just fork me
+2. Link the desired Vagrant file mpseed/Vagrantfile.????? in your base directory
+
+    ln -s mpseed/Vagrantfile.$(something_here) Vagrantfile
+
+3. Add custom config for production or development as vagrant-[prod|dev].rb on
+   your base directory
+
+# Fork (deprecated)
 
 __WARNING:__When using remotes they are meant mainly for branches of the same
 project. So it maybe isn't the best idea
