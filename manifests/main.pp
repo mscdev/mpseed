@@ -1,7 +1,8 @@
 Exec { path => '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' }
 
 # Global variables
-$inc_file_path = '/vagrant/files' # Absolute path to the files directory 
+$mpseed_path = '/vagrant/mpseed' # Absolute path to the files directory 
+$inc_file_path = "${mpseed_path}/files" # Absolute path to the files directory 
 
 $user = 'admin' # User to create
 $password = 'abcdef1' # The user's password
@@ -17,7 +18,7 @@ $db_name = "${project}" # Mysql database name to create
 $db_user = "${project}" # Mysql username to create
 $db_password = "${project}" # Mysql password for $db_user
 $tz = 'Europe/Berlin' # Timezone
-$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply /vagrant/manifests/main.pp'"
+$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
 $fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=/var/www/${project}/repo/fabfile.py"
 
 include users

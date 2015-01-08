@@ -23,10 +23,14 @@ EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
 # require_relative function call
 if File.exist?(CONFIG_FILE_DEV)
     puts "DEVELOPMENT: Loading settings from: #{CONFIG_FILE_DEV}"
-    require_relative "../#{CONFIG_FILE_DEV}"
-else
+    require_relative "#{CONFIG_FILE_DEV}"
+elsif File.exist?(CONFIG_FILE_PROD)
     puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
-    require_relative "../#{CONFIG_FILE_PROD}"
+    require_relative "#{CONFIG_FILE_PROD}"
+else
+    puts "ERROR: You suck! Read the README man"
+    puts "No PRODUCTION or DEVELOPMENT config file found on current dir"
+    abort
 end
 puts "\nPRODUCTION_MODE: #{PRODUCTION_MODE}"
 puts "USE_GUI: #{USE_GUI}"
@@ -41,7 +45,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.customize ["modifyvm", :id, "--memory", EXTRA_MACHINES_RAM]
     end
 
-    config.vm.synced_folder "../", "/repo"
+    config.vm.synced_folder "./", "/repo"
 
     config.vm.define "main", primary: true do |main|
         main.vm.box = "ubuntu/trusty64"
@@ -69,11 +73,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             main.vm.network :forwarded_port, guest: 80, host: 8080
         end
 
-        main.vm.provision :shell, :path => "puppet-install.sh"
-        main.vm.provision :shell, :path => "puppet-modules.sh"
+        main.vm.provision :shell, :path => "mpseed/puppet-install.sh"
+        main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
 
         main.vm.provision :puppet do |puppet|
-            puppet.manifests_path = "manifests"
+            puppet.manifests_path = "mpseed/manifests"
             puppet.manifest_file  = "main.pp"
             puppet.facter  = {"projectid" => PROJECT_NAME}
             puppet.options  = "--verbose"
