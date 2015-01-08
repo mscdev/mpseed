@@ -80,7 +80,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             puppet.manifests_path = "mpseed/manifests"
             puppet.manifest_file  = "main.pp"
             puppet.facter  = {"projectid" => PROJECT_NAME}
-            puppet.options  = "--verbose"
+            puppet.options  = "--debug"
         end
     end 
 
