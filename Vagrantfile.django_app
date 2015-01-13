@@ -82,6 +82,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             puppet.facter  = {"projectid" => PROJECT_NAME}
             puppet.options  = "--debug"
         end
+        if File.exists?(File.expand_path(File.join(File.dirname(__FILE__), "./puppet_extras.pp")))
+
+        main.vm.provision :puppet do |puppet|
+            puppet.manifests_path = "."
+            puppet.manifest_file  = "puppet_extras.pp"
+            puppet.facter  = {"projectid" => PROJECT_NAME}
+            puppet.options  = "--debug"
+        end
+
+        else
+            puts "INFO: No puppet_extras.pp file found. Skipping"
+        end
     end 
 
     (1..EXTRA_MACHINES).each do |i|
