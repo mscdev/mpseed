@@ -30,7 +30,6 @@ include app_deploy
 include nginx
 include uwsgi
 include timezone
-include extra_software
 
 Class['apt'] -> Class['python']      
 Class['apt'] -> Class['paquetes']      
@@ -41,7 +40,6 @@ Class['apt'] -> Class['app_deploy']
 Class['apt'] -> Class['nginx']         
 Class['apt'] -> Class['uwsgi']         
 Class['apt'] -> Class['timezone']      
-Class['apt'] -> Class['extra_software']
 
 class { 'apt':
   always_apt_update    => true,
@@ -120,8 +118,8 @@ class virtualenv {
 
 class paquetes {
 
-    $vcs = [ 'git',  ]
-    package { $vcs: ensure => latest }
+    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen' ]
+    package { $essentials: ensure => latest }
 
     package { 'fabric':
         ensure => installed,
@@ -260,11 +258,5 @@ class timezone {
   file { "/etc/localtime":
     require => Package["tzdata"],
     source => "file:///usr/share/zoneinfo/${tz}",
-  }
-}
-
-class extra_software {
-  package { 'vim':
-    ensure => latest,
   }
 }

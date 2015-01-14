@@ -6,7 +6,7 @@ CONFIG_FILE_PROD= "vagrant-prod.rb"
 CONFIG_FILE_DEV = "vagrant-dev.rb"
 
 # Default configs (override in config file only)
-PRODUCTION_MODE=true
+PUBLIC_NETWORK=true
 USE_GUI=false
 MAIN_CPU_COUNT=1
 MAIN_HOSTNAME="vtfx.dev.mainstorconcept.de"
@@ -23,16 +23,16 @@ EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
 # require_relative function call
 if File.exist?(CONFIG_FILE_DEV)
     puts "DEVELOPMENT: Loading settings from: #{CONFIG_FILE_DEV}"
-    require_relative "#{CONFIG_FILE_DEV}"
+    require_relative "../#{CONFIG_FILE_DEV}"
 elsif File.exist?(CONFIG_FILE_PROD)
     puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
-    require_relative "#{CONFIG_FILE_PROD}"
+    require_relative "../#{CONFIG_FILE_PROD}"
 else
     puts "ERROR: You suck! Read the README man"
     puts "No PRODUCTION or DEVELOPMENT config file found on current dir"
     abort
 end
-puts "\nPRODUCTION_MODE: #{PRODUCTION_MODE}"
+puts "\nPUBLIC_NETWORK: #{PUBLIC_NETWORK}"
 puts "USE_GUI: #{USE_GUI}"
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -58,7 +58,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
         main.vm.hostname=MAIN_HOSTNAME
 
-        if PRODUCTION_MODE == true
+        if PUBLIC_NETWORK == true
             # In production mode configure a 'public' ip addres and confugure
             # the fucking gateway when provisioning. Don't forget to provision!
             #
