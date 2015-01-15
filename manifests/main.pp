@@ -118,7 +118,7 @@ class virtualenv {
 
 class paquetes {
 
-    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen' ]
+    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie']
     package { $essentials: ensure => latest }
 
     package { 'fabric':
