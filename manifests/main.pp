@@ -68,7 +68,7 @@ class users {
       managehome => true,
       shell => "/bin/bash",
       password => $password_hash,
-      groups => ['sudo', 'admin', 'vagrant'],
+      groups => ['sudo', 'vagrant'],
     }
     # SSH Keys
     file { "/home/$user/.ssh/":
