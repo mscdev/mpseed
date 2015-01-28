@@ -1,7 +1,7 @@
 Exec { path => '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' }
 
 # Global variables
-$mpseed_path = '/vagrant/mpseed' # Absolute path to the files directory 
+$mpseed_path = '/repo/mpseed' # Absolute path to the files directory 
 $inc_file_path = "${mpseed_path}/files" # Absolute path to the files directory 
 
 $user = 'admin' # User to create
