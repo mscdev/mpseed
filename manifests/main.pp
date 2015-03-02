@@ -107,7 +107,7 @@ class virtualenv {
     #proxy        => 'http://proxy.domain.com:3128',
     #systempkgs   => true,
     distribute   => false,
-    owner        => "$user",
+    owner        => "www-data",
     group        => "$user",
     #cwd          => '/var/www/virtualenvs/${project}',
     timeout      => 100,
@@ -121,8 +121,8 @@ class paquetes {
     $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie']
     package { $essentials: ensure => latest }
 
-    package { 'fabric':
-        ensure => installed,
+    package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
+        ensure => present,
         provider => pip,
         require => Package['python-pip']
     }
