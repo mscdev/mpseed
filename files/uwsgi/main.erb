@@ -1,7 +1,7 @@
 [uwsgi]
 chdir = /var/www/<%= @project %>/repo/webapp
-home = /var/www/<%= @project %>/env
-module = django.core.handlers.wsgi:WSGIHandler()
+virtualenv = /var/www/<%= @project %>/env
+module = django.core.wsgi:get_wsgi_application()
 env = DJANGO_SETTINGS_MODULE=<%= @project %>.settings
 
 master = true
