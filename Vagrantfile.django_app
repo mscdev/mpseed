@@ -17,6 +17,7 @@ EXTRA_MACHINES=0
 EXTRA_MACHINES_RAM=756
 EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
 #PROJECT_NAME="unnamedApp" # Should be overrided un CONFIG_FILE! Should be
+VM_NAME=""
 #a slug
 
 # The required config file are a directory higher, thats why ../ is prepended to
@@ -51,7 +52,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         main.vm.box = "ubuntu/trusty64"
         main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
         config.vm.provider :virtualbox do |vb| 
-            vb.name = PROJECT_NAME
+            vb.name = "#{PROJECT_NAME}#{VM_NAME}"
             vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
             vb.customize ["modifyvm", :id, "--ioapic", "on"]
             vb.customize ["modifyvm", :id, "--cpus", MAIN_CPU_COUNT]
