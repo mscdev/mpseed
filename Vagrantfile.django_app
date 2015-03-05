@@ -71,7 +71,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         else
             # If not, just use the provided ip address for the private network
             main.vm.network :private_network, ip: MAIN_IP_ADDR
-            main.vm.network :forwarded_port, guest: 80, host: 8080
         end
 
         main.vm.provision :shell, :path => "mpseed/puppet-install.sh"
