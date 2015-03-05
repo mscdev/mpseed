@@ -131,7 +131,6 @@ class paquetes {
 class app_sources {
     $dirs = [ "/var/www", 
               "/var/www/${project}",
-              "/var/www/${project}/media", 
 #              "/var/www/${project}/env",
 ] 
     file { $dirs:
@@ -140,11 +139,8 @@ class app_sources {
         group  => "$user",
         mode   => 755,
     }
-    file { "/var/www/${project}/static": 
-        ensure => "directory",
-        mode => 777,
-    }
-    file { "/var/www/${project}/media": 
+    file { ["/var/www/${project}/static",
+            "/var/www/${project}/media",]: 
         ensure => "directory",
         mode => 777,
     }

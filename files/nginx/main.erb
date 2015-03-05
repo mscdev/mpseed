@@ -12,7 +12,7 @@ server {
         location /media {
                 alias /var/www/<%= @project %>/media;
                 location ~*  \.(jpg|jpeg|png|gif|ico|css|js)$ {
-                         expires 365d;
+                         expires -1;
                 }
         }
 
