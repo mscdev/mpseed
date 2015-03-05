@@ -107,8 +107,8 @@ class virtualenv {
     #proxy        => 'http://proxy.domain.com:3128',
     #systempkgs   => true,
     distribute   => false,
-    owner        => "www-data",
-    group        => "$user",
+    owner        => "$user",
+    group        => "www-data",
     #cwd          => '/var/www/virtualenvs/${project}',
     timeout      => 100,
     require => [Class['app_sources'], Class['database']],
@@ -141,6 +141,10 @@ class app_sources {
         mode   => 755,
     }
     file { "/var/www/${project}/static": 
+        ensure => "directory",
+        mode => 777,
+    }
+    file { "/var/www/${project}/media": 
         ensure => "directory",
         mode => 777,
     }
