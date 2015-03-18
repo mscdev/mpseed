@@ -34,10 +34,20 @@ server {
         access_log  /var/log/nginx/<%= @project %>-access.log;
         error_log   /var/log/nginx/<%= @project %>-error.log;
 
-        location / {
-        if (-f /var/www/<%= @project %>/maintenance) {
-            return 503;
+        location /upgrading.log {
+            types {
+                text/plain log;
+            }
+            alias /var/log/<%= @project %>/<%= @project %>_upgrade.log;
         }
+
+        location / {
+            if (-f /var/www/<%= @project %>/maintenance) {
+                return 503;
+            }
+            if (-f /var/www/<%= @project %>/upgrading) {
+                rewrite ^(.*)$ /static/upgrading.html break;
+            }
 
             uwsgi_pass django;
             include uwsgi_params;
