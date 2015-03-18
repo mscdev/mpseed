@@ -12,6 +12,20 @@ if $projectid == undef {
     fail("Sorry man, you suck: 'projectid fact not defined'")
 }
 
+if $internet == 'false' {
+    notice("Trying to run puppet without internet connection")
+    $pip_packages_path = "/tmp/pip_packages"
+    $package_version = 'present'
+    $apt_update = false
+    $extra_pip_args = "--no-index --find-links ${pip_packages_path}"
+}
+else {
+    notice("Running puppet with internet connection")
+    $package_version = 'latest'
+    $apt_update = true
+    $extra_pip_args = ''
+}
+
 $project = "${projectid}"  # Used in nginx and uwsgi
 $domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
 $db_name = "${project}" # Mysql database name to create
@@ -42,7 +56,7 @@ Class['apt'] -> Class['uwsgi']
 Class['apt'] -> Class['timezone']      
 
 class { 'apt':
-  always_apt_update    => true,
+  always_apt_update    => $internet,
 }
 
 class { 'python':
@@ -99,27 +113,26 @@ class users {
     }
 }
 
+
 class virtualenv {
     python::virtualenv { "/var/www/${project}/env":
-    ensure       => present,
-    version      => 'system',
-    requirements => "/var/www/${project}/repo/webapp/requirements.txt",
-    #proxy        => 'http://proxy.domain.com:3128',
-    #systempkgs   => true,
-    distribute   => false,
-    owner        => "$user",
-    group        => "www-data",
-    #cwd          => '/var/www/virtualenvs/${project}',
-    timeout      => 100,
-    require => [Class['app_sources'], Class['database']],
-    before => Class['app_deploy'],
+        ensure       => present,
+        version      => 'system',
+        requirements => "/var/www/${project}/repo/webapp/requirements.txt",
+        distribute   => false,
+        owner        => "www-data",
+        group        => "$user",
+        timeout      => 100,
+        require => [Class['app_sources'], Class['database']],
+        before => Class['app_deploy'],
+        extra_pip_args  => $extra_pip_args,
     }
 }
 
 class paquetes {
 
     $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie']
-    package { $essentials: ensure => latest }
+    package { $essentials: ensure => $package_version }
 
     package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
         ensure => present,
@@ -153,7 +166,7 @@ class app_sources {
     } 
     #vcsrepo { "/var/www/${project}/repo":
     #    #ensure => present,
-    #    ensure => latest,
+    #    ensure => $package_version,
     #    provider => git,
     #    source => "git://redmine.mainstorconcept.de/vtfx-II.git",
     #    revision => 'master',
@@ -179,7 +192,7 @@ class app_deploy {
 
 class database {
     $postgres = [ 'postgresql', 'libpq-dev', ]
-    package { $postgres: ensure => latest }
+    package { $postgres: ensure => $package_version }
 
     class { 'postgresql::server':
         ip_mask_deny_postgres_user => '0.0.0.0/32',
@@ -203,7 +216,7 @@ class database {
 
 class uwsgi {
     package { ['uwsgi', 'uwsgi-plugin-python']:
-        ensure => installed,
+        ensure => present,
         require => Class['paquetes'],
     }
     file { "/etc/uwsgi/apps-available/${project}.ini":
@@ -266,7 +279,7 @@ class nginx {
 
 class timezone {
   package { "tzdata":
-    ensure => latest,
+    ensure => $package_version,
   }
   file { "/etc/localtime":
     require => Package["tzdata"],
