@@ -168,6 +168,13 @@ class app_deploy {
         logoutput => true,
         #path    => ["/usr/bin", "/usr/sbin"]
     }
+    file { "/etc/sudoers.d/20-update":
+        content => "
+            Defaults!/usr/bin/puppet env_keep+=FACTER_PROJECTID
+            Defaults!/usr/bin/puppet env_keep+=FACTER_INTERNET
+            www-data ALL=(ALL) NOPASSWD:/usr/bin/puppet apply *
+        ",
+    }
 }
 
 class database {
