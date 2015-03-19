@@ -38,7 +38,7 @@ server {
             types {
                 text/plain log;
             }
-            alias /var/log/<%= @project %>/<%= @project %>_upgrade.log;
+            alias /var/log/<%= @project %>/upgrade.log;
         }
 
         location / {

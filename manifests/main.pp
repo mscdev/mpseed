@@ -166,6 +166,12 @@ class app_sources {
         ensure => link,
         target => '/repo/',
     } 
+    file { "/var/log/${project}":
+        ensure => 'directory',
+        owner  => 'www-data',
+        group  => 'admin',
+        mode   => 664
+    } 
     #vcsrepo { "/var/www/${project}/repo":
     #    #ensure => present,
     #    ensure => $package_version,
