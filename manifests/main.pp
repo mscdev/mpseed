@@ -33,7 +33,7 @@ $db_user = "${project}" # Mysql username to create
 $db_password = "${project}" # Mysql password for $db_user
 $tz = 'Europe/Berlin' # Timezone
 $alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
-$alias_run_puppet_extras="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug /var/www/${project}/repo/puppet_extras.pp'"
+$alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} puppet apply --debug /var/www/${project}/repo/puppet_extras.pp'"
 $fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=/var/www/${project}/repo/fabfile.py"
 
 include users
