@@ -33,6 +33,7 @@ $db_user = "${project}" # Mysql username to create
 $db_password = "${project}" # Mysql password for $db_user
 $tz = 'Europe/Berlin' # Timezone
 $alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
+$alias_run_puppet_extras="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug /var/www/${project}/repo/puppet_extras.pp'"
 $fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=/var/www/${project}/repo/fabfile.py"
 
 include users
@@ -100,7 +101,8 @@ class users {
         content  => "alias wd='cd /var/www/$project/repo; source /var/www/$project/env/bin/activate'
                    \nalias run='/var/www/$project/repo/webapp/manage.py runserver 0.0.0.0:8888'
                    \nalias ff='${fabric_local_deploy}'
-                   \n${alias_run_puppet}",
+                   \n${alias_run_puppet}
+                   \n${alias_run_puppet_extras}",
         mode   => 755,
     }
     # Be nice with vagrant user too
