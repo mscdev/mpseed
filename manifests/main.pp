@@ -1,8 +1,5 @@
 Exec { path => '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' }
 
-# Global variables
-$mpseed_path = '/repo/mpseed' # Absolute path to the files directory 
-$inc_file_path = "${mpseed_path}/files" # Absolute path to the files directory 
 
 $user = 'admin' # User to create
 $password = 'abcdef1' # The user's password
@@ -11,6 +8,7 @@ $password_hash = '$6$AmBNh8J7nMlCZcl$kiCaNL0ex.7Oab13v1jJy5QFzdd95KjSIhNgkubjLGQ
 if $projectid == undef {
     fail("Sorry man, you suck: 'projectid fact not defined'")
 }
+$project = "${projectid}" 
 
 if $internet == 'false' {
     notice("Trying to run puppet without internet connection")
@@ -26,15 +24,22 @@ else {
     $extra_pip_args = ''
 }
 
-$project = "${projectid}"  # Used in nginx and uwsgi
-$domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
+# Global variables
+$project_path = "/var/www/${project}" # Base dir
+$repo_path = "${project_path}/repo" # Git repo (or repository 'snapshot')
+$mpseed_path = "${repo_path}/mpseed" # MPSEED sources
+$inc_file_path = "${mpseed_path}/files" # Include files for this puppet manifest
+
+# Database
 $db_name = "${project}" # Mysql database name to create
 $db_user = "${project}" # Mysql username to create
 $db_password = "${project}" # Mysql password for $db_user
+
+# Environment
+$domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
 $tz = 'Europe/Berlin' # Timezone
 $alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
-$alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} puppet apply --debug /var/www/${project}/repo/puppet_extras.pp'"
-$fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=/var/www/${project}/repo/fabfile.py"
+$fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=${repo_path}/fabfile.py"
 
 include users
 include paquetes
@@ -98,11 +103,10 @@ class users {
         ensure => "file",
         owner  => "$user",
         group  => "$user",
-        content  => "alias wd='cd /var/www/$project/repo; source /var/www/$project/env/bin/activate'
-                   \nalias run='/var/www/$project/repo/webapp/manage.py runserver 0.0.0.0:8888'
+        content  => "alias wd='cd ${repo_path}; source ${project_path}/env/bin/activate'
+                   \nalias run='${repo_path}/webapp/manage.py runserver 0.0.0.0:8888'
                    \nalias ff='${fabric_local_deploy}'
-                   \n${alias_run_puppet}
-                   \n${alias_run_puppet_extras}",
+                   \n${alias_run_puppet}",
         mode   => 755,
     }
     # Be nice with vagrant user too
@@ -117,10 +121,10 @@ class users {
 
 
 class virtualenv {
-    python::virtualenv { "/var/www/${project}/env":
+    python::virtualenv { "${project_path}/env":
         ensure       => present,
         version      => 'system',
-        requirements => "/var/www/${project}/repo/webapp/requirements.txt",
+        requirements => "${repo_path}/webapp/requirements.txt",
         distribute   => false,
         owner        => "www-data",
         group        => "$user",
@@ -145,8 +149,8 @@ class paquetes {
 
 class app_sources {
     $dirs = [ "/var/www", 
-              "/var/www/${project}",
-#              "/var/www/${project}/env",
+              "${project_path}",
+#              "${project_path}/env",
 ] 
     file { $dirs:
         ensure => "directory",
@@ -154,15 +158,16 @@ class app_sources {
         group  => "$user",
         mode   => 755,
     }
-    file { ["/var/www/${project}/static",
-            "/var/www/${project}/media",]: 
+    file { ["${project_path}/static",
+            "${project_path}/media",]: 
         ensure => "directory",
         mode => 777,
     }
     file { "/etc/puppet/hiera.yaml":
          ensure => "present",
     }
-    file { "/var/www/${project}/repo/":
+    # Default to play nice with vagrant and with first install
+    file { "${repo_path}/":
         ensure => link,
         target => '/repo/',
     } 
@@ -172,7 +177,7 @@ class app_sources {
         group  => 'admin',
         mode   => 664
     } 
-    #vcsrepo { "/var/www/${project}/repo":
+    #vcsrepo { "${repo_path}":
     #    #ensure => present,
     #    ensure => $package_version,
     #    provider => git,
