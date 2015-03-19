@@ -39,6 +39,7 @@ $db_password = "${project}" # Mysql password for $db_user
 $domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
 $tz = 'Europe/Berlin' # Timezone
 $alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
+$alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} puppet apply --debug ${repo_path}/puppet_extras.pp'"
 $fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=${repo_path}/fabfile.py"
 
 include users
@@ -106,7 +107,8 @@ class users {
         content  => "alias wd='cd ${repo_path}; source ${project_path}/env/bin/activate'
                    \nalias run='${repo_path}/webapp/manage.py runserver 0.0.0.0:8888'
                    \nalias ff='${fabric_local_deploy}'
-                   \n${alias_run_puppet}",
+                   \n${alias_run_puppet}
+                   \n${alias_run_puppet_extras}",
         mode   => 755,
     }
     # Be nice with vagrant user too
@@ -114,7 +116,8 @@ class users {
         ensure => "file",
         owner  => "vagrant",
         group  => "vagrant",
-        content  => "${alias_run_puppet}",
+        content  => "${alias_run_puppet}
+                   \n${alias_run_puppet_extras}",
         mode   => 755,
     }
 }
