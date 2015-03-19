@@ -8,6 +8,7 @@ server {
         server_name localhost;
         listen 80;
 
+        client_max_body_size 100M;
 
         location /media {
                 alias /var/www/<%= @project %>/media;
