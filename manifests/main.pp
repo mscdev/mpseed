@@ -63,7 +63,7 @@ Class['apt'] -> Class['uwsgi']
 Class['apt'] -> Class['timezone']      
 
 class { 'apt':
-  always_apt_update    => $internet,
+  always_apt_update    => $apt_update,
 }
 
 class { 'python':
