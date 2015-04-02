@@ -75,6 +75,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         main.vm.provision :shell, :path => "mpseed/puppet-install.sh"
         main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
+        main.vm.provision :shell, :inline => "mkdir -p /var/www/#{PROJECT_NAME}"
+        main.vm.provision :shell, :inline => "ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
 
         main.vm.provision :puppet do |puppet|
             puppet.manifests_path = "mpseed/manifests"
