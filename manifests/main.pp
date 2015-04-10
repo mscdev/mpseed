@@ -89,7 +89,7 @@ class users {
       managehome => true,
       shell => "/bin/bash",
       password => $password_hash,
-      groups => ['sudo', 'vagrant'],
+      groups => ['sudo',] # 'vagrant'], On bare matal there is no vagrant
     }
     # SSH Keys
     file { "/home/$user/.ssh/":
@@ -111,15 +111,17 @@ class users {
                    \n${alias_run_puppet_extras}",
         mode   => 755,
     }
-    # Be nice with vagrant user too
-    file { "/home/vagrant/.bash_aliases":
-        ensure => "file",
-        owner  => "vagrant",
-        group  => "vagrant",
-        content  => "${alias_run_puppet}
-                   \n${alias_run_puppet_extras}",
-        mode   => 755,
-    }
+
+    # NO VAGRANT on barematal machines
+    ## Be nice with vagrant user too
+    #file { "/home/vagrant/.bash_aliases":
+    #    ensure => "file",
+    #    owner  => "vagrant",
+    #    group  => "vagrant",
+    #    content  => "${alias_run_puppet}
+    #               \n${alias_run_puppet_extras}",
+    #    mode   => 755,
+    #}
 }
 
 
