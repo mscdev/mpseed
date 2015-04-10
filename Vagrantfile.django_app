@@ -1,24 +1,27 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 #
-# Requires an external config file 
+# FILES TO OVERRIDE SETTINGS
 CONFIG_FILE_PROD= "vagrant-prod.rb"
 CONFIG_FILE_DEV = "vagrant-dev.rb"
 
-# Default configs (override in config file only)
-PUBLIC_NETWORK=true
-USE_GUI=false
+################ OVERRIDE IN CONFIG FILE ONLY #######################       
+# USE_GUI=false
+## NETWORK
+# PUBLIC_NETWORK=true # if false it will create a private network
+# MAIN_IP_ADDR="192.168.55.50" # LEAV LAST DIGIT OUT, the instance id will be appended to it to form the ip addr
+# MAIN_GATEWAY="172.20.1.254" # only required if public_network=true
+# MAIN_HOSTNAME="pepe.dev.mainstorconcept.de"
+## HARDWARE
 MAIN_CPU_COUNT=1
-MAIN_HOSTNAME="vtfx.dev.mainstorconcept.de"
-MAIN_GATEWAY="172.20.1.254"
-MAIN_IP_ADDR="192.168.55.50"
 MAIN_RAM=1024
+# MAIN_INSTANCES=1
+## FOR DUMMIE MACHINES
 EXTRA_MACHINES=0
 EXTRA_MACHINES_RAM=756
 EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
-#PROJECT_NAME="unnamedApp" # Should be overrided un CONFIG_FILE! Should be
-VM_NAME=""
-#a slug
+## EXTRAS
+#PROJECT_NAME="unnamedApp" # Declared in CONFIG_FILE! Should be a slug
 
 # The required config file are a directory higher, thats why ../ is prepended to
 # require_relative function call
@@ -48,54 +51,56 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     config.vm.synced_folder "./", "/repo"
 
-    config.vm.define "main", primary: true do |main|
-        main.vm.box = "ubuntu/trusty64"
-        main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-        config.vm.provider :virtualbox do |vb| 
-            vb.name = "#{PROJECT_NAME}#{VM_NAME}"
-            vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
-            vb.customize ["modifyvm", :id, "--ioapic", "on"]
-            vb.customize ["modifyvm", :id, "--cpus", MAIN_CPU_COUNT]
-        end
-        main.vm.hostname=MAIN_HOSTNAME
+    (1..MAIN_INSTANCES).each do |i|
+        config.vm.define "main#{i}", primary: true do |main|
+            main.vm.box = "ubuntu/trusty64"
+            main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+            config.vm.provider :virtualbox do |vb| 
+                vb.name = "#{PROJECT_NAME}-#{i}"
+                vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
+                vb.customize ["modifyvm", :id, "--ioapic", "on"]
+                vb.customize ["modifyvm", :id, "--cpus", MAIN_CPU_COUNT]
+            end
+            main.vm.hostname=MAIN_HOSTNAME
 
-        if PUBLIC_NETWORK == true
-            # In production mode configure a 'public' ip addres and confugure
-            # the fucking gateway when provisioning. Don't forget to provision!
-            #
-            config.vm.network :public_network, ip: MAIN_IP_ADDR
-            default_router = MAIN_GATEWAY
-            # change/ensure the default route via the local network's WAN router, 
-            # useful for public_network/bridged mode
-            config.vm.provision :shell, :inline => "echo 'Network POSCONFIG'; ip route delete default || true; ip route add default via #{default_router}"
-        else
-            # If not, just use the provided ip address for the private network
-            main.vm.network :private_network, ip: MAIN_IP_ADDR
-        end
+            if PUBLIC_NETWORK == true
+                # In production mode configure a 'public' ip addres and confugure
+                # the fucking gateway when provisioning. Don't forget to provision!
+                config.vm.network :public_network, ip: "#{MAIN_IP_ADDR}#{i}"
+                default_router = MAIN_GATEWAY
 
-        main.vm.provision :shell, :path => "mpseed/puppet-install.sh"
-        main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
-        main.vm.provision :shell, :inline => "mkdir -p /var/www/#{PROJECT_NAME}"
-        main.vm.provision :shell, :inline => "ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
+                # change/ensure the default route via the local network's WAN router, 
+                # useful for public_network/bridged mode
+                config.vm.provision :shell, :inline => "echo 'Network POSCONFIG'; ip route delete default || true; ip route add default via #{default_router}"
+            else
+                # If not, just use the provided ip address for the private network
+                main.vm.network :private_network, ip: "#{MAIN_IP_ADDR}#{i}"
+            end
 
-        main.vm.provision :puppet do |puppet|
-            puppet.manifests_path = "mpseed/manifests"
-            puppet.manifest_file  = "main.pp"
-            puppet.facter  = {"projectid" => PROJECT_NAME}
-            puppet.options  = "--debug"
-        end
-        if File.exists?(File.expand_path(File.join(File.dirname(__FILE__), "./puppet_extras.pp")))
+            ###################### PROVISION ########################
+            main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
+            # Fix puppet dependencies (loading templates problem)
+            main.vm.provision :shell, :inline => "mkdir -p /var/www/#{PROJECT_NAME}"
+            main.vm.provision :shell, :inline => "ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
 
-        main.vm.provision :puppet do |puppet|
-            puppet.manifests_path = "."
-            puppet.manifest_file  = "puppet_extras.pp"
-            puppet.facter  = {"projectid" => PROJECT_NAME}
-            puppet.options  = "--debug"
-        end
-
-        else
-            puts "INFO: No puppet_extras.pp file found. Skipping"
-        end
+            ######################## PUPPET #########################
+            main.vm.provision :puppet do |puppet|
+                puppet.manifests_path = "mpseed/manifests"
+                puppet.manifest_file  = "main.pp"
+                puppet.facter  = {"projectid" => PROJECT_NAME}
+                puppet.options  = "--debug"
+            end
+            if File.exists?(File.expand_path(File.join(File.dirname(__FILE__), "./puppet_extras.pp")))
+                main.vm.provision :puppet do |puppet|
+                    puppet.manifests_path = "."
+                    puppet.manifest_file  = "puppet_extras.pp"
+                    puppet.facter  = {"projectid" => PROJECT_NAME}
+                    puppet.options  = "--debug"
+                end
+            else
+                puts "INFO: No puppet_extras.pp file found. Skipping"
+            end
+        end 
     end 
 
     (1..EXTRA_MACHINES).each do |i|
