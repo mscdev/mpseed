@@ -209,26 +209,28 @@ class app_deploy {
 }
 
 class database {
-    $postgres = [ 'postgresql', 'libpq-dev', ]
-    package { $postgres: ensure => $package_version }
+    if $unmodify_db == undef or $unmodify_db != 'True' {
+        $postgres = [ 'postgresql', 'libpq-dev', ]
+        package { $postgres: ensure => $package_version }
 
-    class { 'postgresql::server':
-        ip_mask_deny_postgres_user => '0.0.0.0/32',
-        ip_mask_allow_all_users    => '0.0.0.0/0',
-        listen_addresses           => '*',
-        #ipv4acls                   => ['hostssl all johndoe 192.168.0.0/24 cert'],
-        #manage_firewall            => true,
-        postgres_password          => 'postgres',
-    }
-    postgresql::server::db { $db_name:
-        user     => $db_user,
-        password => postgresql_password($db_user, $db_password),
-    }
-    cron { 'postgres vacuuming':
-        command => "/usr/bin/vacuumdb --all --analyze --verbose > /tmp/postgres_vacuum_analyze.log 2>&1",
-        user    => 'postgres',
-        minute  => '1',
-        hour  => '5',
+        class { 'postgresql::server':
+            ip_mask_deny_postgres_user => '0.0.0.0/32',
+            ip_mask_allow_all_users    => '0.0.0.0/0',
+            listen_addresses           => '*',
+            #ipv4acls                   => ['hostssl all johndoe 192.168.0.0/24 cert'],
+            #manage_firewall            => true,
+            postgres_password          => 'postgres',
+        }
+        postgresql::server::db { $db_name:
+            user     => $db_user,
+            password => postgresql_password($db_user, $db_password),
+        }
+        cron { 'postgres vacuuming':
+            command => "/usr/bin/vacuumdb --all --analyze --verbose > /tmp/postgres_vacuum_analyze.log 2>&1",
+            user    => 'postgres',
+            minute  => '1',
+            hour  => '5',
+        }
     }
 }
 
