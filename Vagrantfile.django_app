@@ -47,6 +47,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.gui = USE_GUI 
         # Use VBoxManage to customize the VM
         vb.customize ["modifyvm", :id, "--memory", EXTRA_MACHINES_RAM]
+        # Sync time every 60 sec
+        vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 60000 ]
     end
 
     config.vm.synced_folder "./", "/repo"
