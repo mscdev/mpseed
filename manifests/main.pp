@@ -15,13 +15,13 @@ if $internet == 'false' {
     $pip_packages_path = "/tmp/pip_packages"
     $package_version = 'present'
     $apt_update = false
-    $extra_pip_args = "--no-index --find-links ${pip_packages_path}"
+    $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
 }
 else {
     notice("Running puppet with internet connection")
     $package_version = 'latest'
     $apt_update = true
-    $extra_pip_args = ''
+    $extra_pip_args = '--upgrade'
 }
 
 # Global variables
