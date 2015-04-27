@@ -172,10 +172,10 @@ class app_sources {
          ensure => "present",
     }
     # Default to play nice with vagrant and with first install
-    file { "${repo_path}/":
-        ensure => link,
-        target => '/repo/',
-    } 
+    #file { "${repo_path}/":
+    #    ensure => link,
+    #    target => '/repo/',
+    #} 
     file { "/var/log/${project}":
         ensure => 'directory',
         owner  => 'www-data',
