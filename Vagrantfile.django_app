@@ -84,7 +84,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             # Fix puppet dependencies (loading templates problem)
             main.vm.provision :shell, :inline => "mkdir -p /var/www/#{PROJECT_NAME}"
             main.vm.provision :shell, :inline => "ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
-            main.vm.provision "shell", run: "always", inline: "sudo service uwsgi restart"
+            main.vm.provision "shell", run: "always", inline: "sudo service uwsgi restart | exit 0" # Exit 0 stops from blocking if restart fails (when not yet installed)
 
             ######################## PUPPET #########################
             main.vm.provision :puppet do |puppet|
