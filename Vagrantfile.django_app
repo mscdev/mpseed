@@ -57,7 +57,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         config.vm.define "main#{i}", primary: true do |main|
             main.vm.box = "ubuntu/trusty64"
             main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-            config.vm.provider :virtualbox do |vb| 
+            main.vm.provider :virtualbox do |vb| 
                 vb.name = "#{PROJECT_NAME}-#{i}"
                 vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
                 vb.customize ["modifyvm", :id, "--ioapic", "on"]
@@ -68,12 +68,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             if PUBLIC_NETWORK == true
                 # In production mode configure a 'public' ip addres and confugure
                 # the fucking gateway when provisioning. Don't forget to provision!
-                config.vm.network :public_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
+                main.vm.network :public_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
                 default_router = MAIN_GATEWAY
 
                 # change/ensure the default route via the local network's WAN router, 
                 # useful for public_network/bridged mode
-                config.vm.provision "shell", inline: "echo 'Network POSCONFIG'; ip route delete default || true; ip route add default via #{default_router}", run: "always"
+                main.vm.provision "shell", run: "always", inline: "echo 'Network POSCONFIG'; ip route delete default || true; ip route add default via #{default_router}"
             else
                 # If not, just use the provided ip address for the private network
                 main.vm.network :private_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
@@ -84,6 +84,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             # Fix puppet dependencies (loading templates problem)
             main.vm.provision :shell, :inline => "mkdir -p /var/www/#{PROJECT_NAME}"
             main.vm.provision :shell, :inline => "ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
+            main.vm.provision "shell", run: "always", inline: "sudo service uwsgi restart"
 
             ######################## PUPPET #########################
             main.vm.provision :puppet do |puppet|
