@@ -51,7 +51,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 60000 ]
     end
 
-    config.vm.synced_folder "./", "/repo"
+    config.vm.synced_folder "./", "/repo", owner: "admin"
 
     (1..MAIN_INSTANCES).each do |i|
         config.vm.define "main#{i}", primary: true do |main|
