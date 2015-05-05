@@ -142,7 +142,7 @@ class virtualenv {
 
 class paquetes {
 
-    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie', 'zip', 'unzip']
+    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie', 'zip', 'unzip', 'ntpd']
     package { $essentials: ensure => $package_version }
 
     package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
