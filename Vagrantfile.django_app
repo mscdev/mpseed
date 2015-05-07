@@ -12,6 +12,7 @@ CONFIG_FILE_DEV = "vagrant-dev.rb"
 # MAIN_IP_ADDR="192.168.55.50" # LEAV LAST DIGIT OUT, the instance id will be appended to it to form the ip addr
 # MAIN_GATEWAY="172.20.1.254" # only required if public_network=true
 # MAIN_HOSTNAME="pepe.dev.mainstorconcept.de"
+# PROVIDER="lxc" # lxc or virtualbox
 ## HARDWARE
 MAIN_CPU_COUNT=1
 MAIN_RAM=1024
@@ -36,48 +37,65 @@ else
     puts "No PRODUCTION or DEVELOPMENT config file found on current dir"
     abort
 end
-puts "\nPUBLIC_NETWORK: #{PUBLIC_NETWORK}"
-puts "USE_GUI: #{USE_GUI}"
+# puts "\nPUBLIC_NETWORK: #{PUBLIC_NETWORK}"
+# puts "USE_GUI: #{USE_GUI}"
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    config.vm.provider :virtualbox do |vb| 
-        vb.gui = USE_GUI 
-        # Use VBoxManage to customize the VM
-        vb.customize ["modifyvm", :id, "--memory", EXTRA_MACHINES_RAM]
-        # Sync time every 60 sec
-        vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 60000 ]
-    end
-
-    config.vm.synced_folder "./", "/repo", owner: "admin"
 
     (1..MAIN_INSTANCES).each do |i|
+
         config.vm.define "main#{i}", primary: true do |main|
-            main.vm.box = "ubuntu/trusty64"
-            main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
-            main.vm.provider :virtualbox do |vb| 
-                vb.name = "#{PROJECT_NAME}-#{i}"
-                vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
-                vb.customize ["modifyvm", :id, "--ioapic", "on"]
-                vb.customize ["modifyvm", :id, "--cpus", MAIN_CPU_COUNT]
-            end
+          
+            main.vm.synced_folder "./", "/repo", owner: "admin"
             main.vm.hostname=MAIN_HOSTNAME
 
-            if PUBLIC_NETWORK == true
-                # In production mode configure a 'public' ip addres and confugure
-                # the fucking gateway when provisioning. Don't forget to provision!
-                main.vm.network :public_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
-                default_router = MAIN_GATEWAY
+            if PROVIDER == "lxc"
 
-                # change/ensure the default route via the local network's WAN router, 
-                # useful for public_network/bridged mode
-                main.vm.provision "shell", run: "always", inline: "echo 'Network POSCONFIG'; ip route delete default; ip route add default via #{default_router}; exit 0"
+                main.vm.box = "fgrehm/trusty64-lxc"
+                if PUBLIC_NETWORK == false
+                    main.vm.network :private_network, ip: "#{MAIN_IP_ADDR}#{i - 1}", lxc__bridge_name: "vlxcbr#{PROJECT_NAME}"
+                else
+                    puts ">> lxc provider does not support PUBLIC_NETWORK=true. It will not configure networks with this configuration"
+                end
+                main.vm.provider :lxc do |vb|
+                end
+
             else
-                # If not, just use the provided ip address for the private network
-                main.vm.network :private_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
+        
+                main.vm.box = "ubuntu/trusty64"
+                main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+                if PUBLIC_NETWORK == true
+                    # In production mode configure a 'public' ip addres and confugure
+                    # the fucking gateway when provisioning. Don't forget to provision!
+                    main.vm.network :public_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
+                    default_router = MAIN_GATEWAY
+
+                    # change/ensure the default route via the local network's WAN router, 
+                    # useful for public_network/bridged mode
+                    main.vm.provision :shell, :inline => "echo 'Network POSCONFIG'; ip route delete default || true; ip route add default via #{default_router}"
+                else
+                    # If not, just use the provided ip address for the private network
+                    main.vm.network :private_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
+                end
+                main.vm.provider :virtualbox do |vb| 
+                    
+                    vb.gui = USE_GUI 
+                    # Use VBoxManage to customize the VM
+                    vb.customize ["modifyvm", :id, "--memory", EXTRA_MACHINES_RAM]
+                    # Sync time every 60 sec
+                    vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 60000 ]
+
+                    vb.name = "#{PROJECT_NAME}-#{i}"
+                    vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
+                    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+                    vb.customize ["modifyvm", :id, "--cpus", MAIN_CPU_COUNT]
+                end
+                
             end
+
 
             ###################### PROVISION ########################
             main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
@@ -108,10 +126,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     (1..EXTRA_MACHINES).each do |i|
         config.vm.define "vte-#{i}" do |vte|
-            vte.vm.box = "suse/sless11"
-            vte.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/sles-11sp1-x64-vbox4210.box" 
-            vte1.vm.hostname="vte-#{i}"
-            vte1.vm.network :private_network, ip: "#{EXTRA_MACHINES_BASE_IP}#{i}"
+            puts "vte can only use virtualbox. No suse/sless11 lxc support yet"
+            vte.vm.provider :virtualbox do |vb| 
+                vte.vm.box = "suse/sless11"
+                vte.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/sles-11sp1-x64-vbox4210.box" 
+                vte.vm.hostname="vte-#{i}"
+                vte.vm.network :private_network, ip: "#{EXTRA_MACHINES_BASE_IP}#{i}"
+            end
+            
         end 
     end 
 end
