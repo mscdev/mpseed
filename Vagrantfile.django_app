@@ -75,7 +75,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
                     # change/ensure the default route via the local network's WAN router, 
                     # useful for public_network/bridged mode
-                    main.vm.provision :shell, :inline => "echo 'Network POSCONFIG'; ip route delete default || true; ip route add default via #{default_router}"
+                    main.vm.provision "shell", run: "always", inline: "echo 'Network POSCONFIG'; ip route delete default; ip route add default via #{default_router}; exit 0"
                 else
                     # If not, just use the provided ip address for the private network
                     main.vm.network :private_network, ip: "#{MAIN_IP_ADDR}#{i - 1}"
