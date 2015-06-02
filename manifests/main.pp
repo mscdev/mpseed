@@ -202,9 +202,10 @@ class app_sources {
 
 class app_deploy {
     exec {$fabric_local_deploy:
-        provider=> shell,
+        provider  => shell,
         logoutput => true,
-        #path    => ["/usr/bin", "/usr/sbin"]
+        timeout   => 0, 
+        #path     => ["/usr/bin", "/usr/sbin"]
     }
     file { "/etc/sudoers.d/20-update":
         content => "
