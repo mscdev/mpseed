@@ -138,6 +138,13 @@ class virtualenv {
         before => Class['app_deploy'],
         extra_pip_args  => $extra_pip_args,
     }
+    python::requirements { "${repo_path}/webapp/requirements.txt" :
+        virtualenv => "${project_path}/env",
+        owner      => "www-data",
+        group      => "$user",
+        forceupdate => true,
+        extra_pip_args => $extra_pip_args,
+    }
 }
 
 class paquetes {
