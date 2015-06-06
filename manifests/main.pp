@@ -12,7 +12,7 @@ $project = "${projectid}"
 
 if $internet == 'false' {
     notice("Trying to run puppet without internet connection")
-    $pip_packages_path = "/tmp/pip_packages"
+    $pip_packages_path = "/tmp/requirements/pip"
     $package_version = 'present'
     $apt_update = false
     $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
