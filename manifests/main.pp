@@ -126,6 +126,7 @@ class users {
 
 
 class virtualenv {
+    require paquetes
     python::virtualenv { "${project_path}/env":
         ensure       => present,
         version      => 'system',
@@ -148,7 +149,8 @@ class virtualenv {
 }
 
 class paquetes {
-
+    require apt
+    require python
     $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie', 'zip', 'unzip', 'ntp']
     package { $essentials: ensure => $package_version }
 
@@ -160,6 +162,7 @@ class paquetes {
 }
 
 class app_sources {
+    require virtualenv
     $dirs = [ "/var/www", 
               "${project_path}",
 #              "${project_path}/env",
@@ -201,6 +204,7 @@ class app_sources {
 }
 
 class app_deploy {
+    require app_sources
     exec {$fabric_local_deploy:
         provider  => shell,
         logoutput => true,
@@ -217,6 +221,8 @@ class app_deploy {
 }
 
 class database {
+    require apt
+
     if $unmodify_db == undef or $unmodify_db != 'True' {
         $postgres = [ 'postgresql', 'libpq-dev', ]
         package { $postgres: ensure => $package_version }
@@ -243,6 +249,7 @@ class database {
 }
 
 class uwsgi {
+    require app_sources
     package { ['uwsgi', 'uwsgi-plugin-python']:
         ensure => present,
         require => Class['paquetes'],
@@ -273,6 +280,7 @@ class uwsgi {
 }
 
 class nginx {
+    require apt
     package { 'nginx':
         ensure => present,
         require => Class['paquetes'],
@@ -306,6 +314,7 @@ class nginx {
 }
 
 class timezone {
+  require apt
   package { "tzdata":
     ensure => $package_version,
   }
