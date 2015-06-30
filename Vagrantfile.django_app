@@ -1,4 +1,4 @@
-# -*- mode: ruby -*-
+# -*- mode: ruby -*fixes #1118 @2h30m, full replication-
 # vi: set ft=ruby :
 #
 # FILES TO OVERRIDE SETTINGS
@@ -100,8 +100,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             ###################### PROVISION ########################
             main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
             # Fix puppet dependencies (loading templates problem)
-            main.vm.provision :shell, :inline => "mkdir -p /var/www/#{PROJECT_NAME}"
-            main.vm.provision :shell, :inline => "ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
+            main.vm.provision :shell, :inline => "echo '* Making project directory'; mkdir -p /var/www/#{PROJECT_NAME}"
+            main.vm.provision :shell, :inline => "echo '* Linking project directory'; ln -f -s /repo /var/www/#{PROJECT_NAME}/repo"
             main.vm.provision "shell", run: "always", inline: "sudo service uwsgi restart ; exit 0" # Exit 0 stops from blocking if restart fails (when not yet installed)
 
             ######################## PUPPET #########################
