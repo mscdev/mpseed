@@ -14,13 +14,18 @@ if $internet == 'false' {
     notice("Trying to run puppet without internet connection")
     $pip_packages_path = "/tmp/requirements/pip"
     $package_version = 'present'
-    $apt_update = false
+    #$apt_update = false
     $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
 }
 else {
     notice("Running puppet with internet connection")
+    exec { "apt-update":
+            command => "/usr/bin/apt-get update"
+    }
+    Exec["apt-update"] -> Package <| |>
+
     $package_version = 'latest'
-    $apt_update = true
+    #$apt_update = true
     $extra_pip_args = '--upgrade'
 }
 
@@ -52,20 +57,21 @@ include nginx
 include uwsgi
 include timezone
 
-Class['apt']      -> Class['python']
-Class['apt']      -> Class['paquetes']      
-Class['python']   -> Class['virtualenv']
-Class['paquetes'] -> Class['timezone']      
-Class['paquetes'] -> Class['database']      
-Class['paquetes'] -> Class['app_sources']   
-Class['paquetes'] -> Class['nginx']         
-Class['virtualenv'] -> Class['uwsgi']         
-Class['uwsgi']    -> Class['app_deploy']    
+#Class['apt']      -> Class['python']
+#Class['apt']      -> Class['paquetes']      
+#Class['python']   -> Class['virtualenv']
+#Class['paquetes'] -> Class['timezone']      
+#Class['paquetes'] -> Class['database']      
+#Class['paquetes'] -> Class['app_sources']   
+#Class['paquetes'] -> Class['nginx']         
+#Class['virtualenv'] -> Class['uwsgi']         
+#Class['uwsgi']    -> Class['app_deploy']    
+#
+#class { 'apt':
+#  always_apt_update    => $apt_update,
+#}
 
-class { 'apt':
-  always_apt_update    => $apt_update,
-  timeout              => 1800,
-}
+
 
 class { 'python':
     dev        => true, # install python-dev
@@ -130,14 +136,13 @@ class virtualenv {
     python::virtualenv { "${project_path}/env":
         ensure       => present,
         version      => 'system',
-        requirements => "${repo_path}/webapp/requirements.txt",
         distribute   => false,
         owner        => "www-data",
         group        => "$user",
         require => [Class['app_sources'], Class['database']],
         before => Class['app_deploy'],
         extra_pip_args  => $extra_pip_args,
-    }
+    } ->
     python::requirements { "${repo_path}/webapp/requirements.txt" :
         virtualenv => "${project_path}/env",
         owner      => "www-data",
@@ -188,15 +193,6 @@ class app_sources {
         group  => 'admin',
         mode   => 664
     } 
-    #vcsrepo { "${repo_path}":
-    #    #ensure => present,
-    #    ensure => $package_version,
-    #    provider => git,
-    #    source => "git://redmine.mainstorconcept.de/vtfx-II.git",
-    #    revision => 'master',
-    #    user => "$user",
-    #    require => Package['git']
-    #}
 }
 
 class app_deploy {
@@ -245,7 +241,7 @@ class database {
 class uwsgi {
     package { ['uwsgi', 'uwsgi-plugin-python']:
         ensure => present,
-        require => Class['paquetes'],
+        #  require => Class['paquetes'],
     }
     file { "/etc/uwsgi/apps-available/${project}.ini":
         ensure => present,
@@ -275,7 +271,7 @@ class uwsgi {
 class nginx {
     package { 'nginx':
         ensure => present,
-        require => Class['paquetes'],
+        #require => Class['paquetes'],
     }
     file { "/etc/nginx/sites-available/${project}":
         ensure => file,
