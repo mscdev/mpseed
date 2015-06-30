@@ -205,6 +205,7 @@ class app_deploy {
         logoutput => true,
         timeout   => 0, 
         #path     => ["/usr/bin", "/usr/sbin"]
+        require => [ Class['virtualenv'], Class['uwsgi'], Class['nginx'] ]
     }
     file { "/etc/sudoers.d/20-update":
         content => "
