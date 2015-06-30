@@ -52,18 +52,19 @@ include nginx
 include uwsgi
 include timezone
 
-Class['apt'] -> Class['python']      
-Class['apt'] -> Class['paquetes']      
-Class['apt'] -> Class['database']      
-Class['apt'] -> Class['app_sources']   
-Class['apt'] -> Class['virtualenv']    
-Class['apt'] -> Class['app_deploy']    
-Class['apt'] -> Class['nginx']         
-Class['apt'] -> Class['uwsgi']         
-Class['apt'] -> Class['timezone']      
+Class['apt']      -> Class['python']
+Class['apt']      -> Class['paquetes']      
+Class['python']   -> Class['virtualenv']
+Class['paquetes'] -> Class['timezone']      
+Class['paquetes'] -> Class['database']      
+Class['paquetes'] -> Class['app_sources']   
+Class['paquetes'] -> Class['nginx']         
+Class['virtualenv'] -> Class['uwsgi']         
+Class['uwsgi']    -> Class['app_deploy']    
 
 class { 'apt':
   always_apt_update    => $apt_update,
+  timeout              => 1800,
 }
 
 class { 'python':
@@ -126,7 +127,6 @@ class users {
 
 
 class virtualenv {
-    require paquetes
     python::virtualenv { "${project_path}/env":
         ensure       => present,
         version      => 'system',
@@ -134,7 +134,6 @@ class virtualenv {
         distribute   => false,
         owner        => "www-data",
         group        => "$user",
-        timeout      => 100,
         require => [Class['app_sources'], Class['database']],
         before => Class['app_deploy'],
         extra_pip_args  => $extra_pip_args,
@@ -149,20 +148,17 @@ class virtualenv {
 }
 
 class paquetes {
-    require apt
-    require python
     $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie', 'zip', 'unzip', 'ntp']
     package { $essentials: ensure => $package_version }
 
     package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
         ensure => present,
         provider => pip,
-        require => Package['python-pip']
+        require => [ Package['python-pip'], Package['python-dev'] ]
     }
 }
 
 class app_sources {
-    require virtualenv
     $dirs = [ "/var/www", 
               "${project_path}",
 #              "${project_path}/env",
@@ -204,7 +200,6 @@ class app_sources {
 }
 
 class app_deploy {
-    require app_sources
     exec {$fabric_local_deploy:
         provider  => shell,
         logoutput => true,
@@ -221,8 +216,6 @@ class app_deploy {
 }
 
 class database {
-    require apt
-
     if $unmodify_db == undef or $unmodify_db != 'True' {
         $postgres = [ 'postgresql', 'libpq-dev', ]
         package { $postgres: ensure => $package_version }
@@ -249,7 +242,6 @@ class database {
 }
 
 class uwsgi {
-    require app_sources
     package { ['uwsgi', 'uwsgi-plugin-python']:
         ensure => present,
         require => Class['paquetes'],
@@ -280,7 +272,6 @@ class uwsgi {
 }
 
 class nginx {
-    require apt
     package { 'nginx':
         ensure => present,
         require => Class['paquetes'],
@@ -314,7 +305,6 @@ class nginx {
 }
 
 class timezone {
-  require apt
   package { "tzdata":
     ensure => $package_version,
   }
