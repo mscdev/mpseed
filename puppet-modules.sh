@@ -16,7 +16,7 @@ fi
 if ! which puppet > /dev/null ; then
         echo "Puppet is NOT installed. Installing"
         sudo apt-get install --assume-yes puppet
-echo
+else
         echo "Puppet already present"
 fi
  
