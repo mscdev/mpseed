@@ -11,15 +11,15 @@ if which puppet > /dev/null ; then
         exit 0
 fi
 
-echo "Installing Puppet repo for Ubuntu 12.04 LTS"
-wget -qO /tmp/puppetlabs-release-precise.deb \
+#echo "Installing Puppet repo for Ubuntu 12.04 LTS"
+#wget -qO /tmp/puppetlabs-release-precise.deb \
+#https://apt.puppetlabs.com/puppetlabs-release-precise.deb
+#dpkg -i /tmp/puppetlabs-release-precise.deb
+#rm /tmp/puppetlabs-release-precise.deb
 
-https://apt.puppetlabs.com/puppetlabs-release-precise.deb
-
-dpkg -i /tmp/puppetlabs-release-precise.deb
-rm /tmp/puppetlabs-release-precise.deb
-aptitude update
+echo Updating apt-get
+apt-get update
 #aptitude upgrade -y
+
 echo Installing puppet
-aptitude install -y puppet
-echo "Puppet installed!"
+apt-get install -y puppet
