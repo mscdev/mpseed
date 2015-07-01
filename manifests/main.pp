@@ -11,26 +11,35 @@ if $projectid == undef {
 $project = "${projectid}" 
 
 if $internet == 'false' {
+    if $version_dir == undef {
+      fail("Sorry man, you suck: 'version fact not defined' and internet fact == 'false'")
+    }
     notice("Trying to run puppet without internet connection")
-    $pip_packages_path = "/tmp/requirements/pip"
+    $project_path="${version_dir}"
+    $pip_packages_path = "${version_dir}/requirements/pip"
     $package_version = 'present'
     #$apt_update = false
     $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
+
+    exec {'apt-update': 
+      command => "${version_dir}/repo/install_deb_pkgs_no_internet.sh ${version_dir}/requirements/deb"
+    }
 }
 else {
     notice("Running puppet with internet connection")
+    $project_path = "/var/www/${project}"
     exec { "apt-update":
-            command => "/usr/bin/apt-get update"
+        command => "/usr/bin/apt-get update"
     }
-    Exec["apt-update"] -> Package <| |>
-
     $package_version = 'latest'
     #$apt_update = true
     $extra_pip_args = '--upgrade'
 }
 
+Exec["apt-update"] -> Package <| |>
+
 # Global variables
-$project_path = "/var/www/${project}" # Base dir
+#$project_path = "/var/www/${project}" # Base dir
 $repo_path = "${project_path}/repo" # Git repo (or repository 'snapshot')
 $mpseed_path = "${repo_path}/mpseed" # MPSEED sources
 $inc_file_path = "${mpseed_path}/files" # Include files for this puppet manifest
