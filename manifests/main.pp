@@ -265,7 +265,21 @@ class uwsgi {
         ensure => link,
         target => "/etc/uwsgi/apps-available/${project}.ini",
         require => Package['uwsgi'],
-    } 
+    }
+    file { "/var/log/uwsgi/${project}-req.log":
+        ensure => present,
+        owner => 'www-data',
+        group => 'www-data',
+        mode => '0640',
+        require => Package['uwsgi'],
+    }
+    file { "/var/log/uwsgi/${project}-err.log":
+        ensure => present,
+        owner => 'www-data',
+        group => 'www-data',
+        mode => '0640',
+        require => Package['uwsgi'],
+    }
     service { 'uwsgi':
         ensure => running,
         provider => upstart,
