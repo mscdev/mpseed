@@ -5,7 +5,6 @@ upstream django {
 }
 
 server {
-        server_name localhost;
         listen 80;
 
         client_max_body_size 100M;
@@ -65,5 +64,7 @@ server {
                 
             
         }
+        
+        include /etc/nginx/locations.d/*.conf;
 }
 

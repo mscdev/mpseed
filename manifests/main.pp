@@ -315,6 +315,13 @@ class nginx {
         target => "/etc/nginx/sites-available/${project}",
         require => Package['nginx'],
     } 
+    file { "/etc/nginx/locations.d":
+        ensure => directory,
+        owner => 'root',
+        group => 'root',
+        mode => '755',
+        require => Package['nginx'],
+    }
     service { 'nginx':
         ensure => running,
         enable => true,
