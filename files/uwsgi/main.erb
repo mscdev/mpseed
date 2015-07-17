@@ -1,6 +1,9 @@
 [uwsgi]
 plugins = python, logfile
 
+# for development only
+# py-autoreload=2
+
 chdir = /var/www/<%= @project %>/repo/webapp
 virtualenv = /var/www/<%= @project %>/env
 module = django.core.wsgi:get_wsgi_application()
