@@ -15,11 +15,12 @@ if $internet == 'false' {
       fail("Sorry man, you suck: 'version fact not defined' and internet fact == 'false'")
     }
     notice("Trying to run puppet without internet connection")
-    $project_path="${version_dir}"
+    #$project_path="${version_dir}"
     $pip_packages_path = "${version_dir}/requirements/pip"
     $package_version = 'present'
     #$apt_update = false
     $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
+    $pip_requirements_file = "requirements_nointernet.txt"
 
     exec {'apt-update': 
       command => "${version_dir}/repo/install_deb_pkgs_no_internet.sh ${version_dir}/requirements/deb"
@@ -27,19 +28,20 @@ if $internet == 'false' {
 }
 else {
     notice("Running puppet with internet connection")
-    $project_path = "/var/www/${project}"
+    #$project_path = "/var/www/${project}"
     exec { "apt-update":
         command => "/usr/bin/apt-get update"
     }
     $package_version = 'latest'
     #$apt_update = true
     $extra_pip_args = '--upgrade'
+    $pip_requirements_file = "requirements.txt"
 }
 
 Exec["apt-update"] -> Package <| |>
 
 # Global variables
-#$project_path = "/var/www/${project}" # Base dir
+$project_path = "/var/www/${project}" # Base dir
 $repo_path = "${project_path}/repo" # Git repo (or repository 'snapshot')
 $mpseed_path = "${repo_path}/mpseed" # MPSEED sources
 $inc_file_path = "${mpseed_path}/files" # Include files for this puppet manifest
@@ -152,7 +154,7 @@ class virtualenv {
         before => Class['app_deploy'],
         extra_pip_args  => $extra_pip_args,
     } ->
-    python::requirements { "${repo_path}/webapp/requirements.txt" :
+    python::requirements { "${repo_path}/webapp/${pip_requirements_file}" :
         virtualenv => "${project_path}/env",
         owner      => "www-data",
         group      => "$user",
