@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+WWW_USER=vagrant
 
 PACKAGES='apache2 git vim'
 

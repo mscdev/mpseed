@@ -1,7 +1,5 @@
 Exec { path => '/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin' }
 
-# Global variables
-$inc_file_path = '/vagrant/files' # Absolute path to the files directory 
 
 $user = 'admin' # User to create
 $password = 'abcdef1' # The user's password
@@ -10,15 +8,39 @@ $password_hash = '$6$AmBNh8J7nMlCZcl$kiCaNL0ex.7Oab13v1jJy5QFzdd95KjSIhNgkubjLGQ
 if $projectid == undef {
     fail("Sorry man, you suck: 'projectid fact not defined'")
 }
+$project = "${projectid}" 
 
-$project = "${projectid}"  # Used in nginx and uwsgi
-$domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
+if $internet == 'false' {
+    notice("Trying to run puppet without internet connection")
+    $pip_packages_path = "/tmp/pip_packages"
+    $package_version = 'present'
+    $apt_update = false
+    $extra_pip_args = "--no-index --find-links ${pip_packages_path}"
+}
+else {
+    notice("Running puppet with internet connection")
+    $package_version = 'latest'
+    $apt_update = true
+    $extra_pip_args = ''
+}
+
+# Global variables
+$project_path = "/var/www/${project}" # Base dir
+$repo_path = "${project_path}/repo" # Git repo (or repository 'snapshot')
+$mpseed_path = "${repo_path}/mpseed" # MPSEED sources
+$inc_file_path = "${mpseed_path}/files" # Include files for this puppet manifest
+
+# Database
 $db_name = "${project}" # Mysql database name to create
 $db_user = "${project}" # Mysql username to create
 $db_password = "${project}" # Mysql password for $db_user
+
+# Environment
+$domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
 $tz = 'Europe/Berlin' # Timezone
-$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply /vagrant/manifests/main.pp'"
-$fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=/var/www/${project}/repo/fabfile.py"
+$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
+$alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} puppet apply --debug ${repo_path}/puppet_extras.pp'"
+$fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=${repo_path}/fabfile.py"
 
 include users
 include paquetes
@@ -29,7 +51,6 @@ include app_deploy
 include nginx
 include uwsgi
 include timezone
-include extra_software
 
 Class['apt'] -> Class['python']      
 Class['apt'] -> Class['paquetes']      
@@ -40,10 +61,9 @@ Class['apt'] -> Class['app_deploy']
 Class['apt'] -> Class['nginx']         
 Class['apt'] -> Class['uwsgi']         
 Class['apt'] -> Class['timezone']      
-Class['apt'] -> Class['extra_software']
 
 class { 'apt':
-  always_apt_update    => true,
+  always_apt_update    => $internet,
 }
 
 class { 'python':
@@ -69,7 +89,7 @@ class users {
       managehome => true,
       shell => "/bin/bash",
       password => $password_hash,
-      groups => ['sudo', 'admin', 'vagrant'],
+      groups => ['sudo', 'vagrant'],
     }
     # SSH Keys
     file { "/home/$user/.ssh/":
@@ -84,10 +104,11 @@ class users {
         ensure => "file",
         owner  => "$user",
         group  => "$user",
-        content  => "alias wd='cd /var/www/$project/repo; source /var/www/$project/env/bin/activate'
-                   \nalias run='/var/www/$project/repo/webapp/manage.py runserver 0.0.0.0:8888'
+        content  => "alias wd='cd ${repo_path}; source ${project_path}/env/bin/activate'
+                   \nalias run='${repo_path}/webapp/manage.py runserver 0.0.0.0:8888'
                    \nalias ff='${fabric_local_deploy}'
-                   \n${alias_run_puppet}",
+                   \n${alias_run_puppet}
+                   \n${alias_run_puppet_extras}",
         mode   => 755,
     }
     # Be nice with vagrant user too
@@ -95,35 +116,35 @@ class users {
         ensure => "file",
         owner  => "vagrant",
         group  => "vagrant",
-        content  => "${alias_run_puppet}",
+        content  => "${alias_run_puppet}
+                   \n${alias_run_puppet_extras}",
         mode   => 755,
     }
 }
 
+
 class virtualenv {
-    python::virtualenv { "/var/www/${project}/env":
-    ensure       => present,
-    version      => 'system',
-    requirements => "/var/www/${project}/repo/webapp/requirements.txt",
-    #proxy        => 'http://proxy.domain.com:3128',
-    #systempkgs   => true,
-    distribute   => false,
-    owner        => "$user",
-    group        => "$user",
-    #cwd          => '/var/www/virtualenvs/${project}',
-    timeout      => 100,
-    require => [Class['app_sources'], Class['database']],
-    before => Class['app_deploy'],
+    python::virtualenv { "${project_path}/env":
+        ensure       => present,
+        version      => 'system',
+        requirements => "${repo_path}/webapp/requirements.txt",
+        distribute   => false,
+        owner        => "www-data",
+        group        => "$user",
+        timeout      => 100,
+        require => [Class['app_sources'], Class['database']],
+        before => Class['app_deploy'],
+        extra_pip_args  => $extra_pip_args,
     }
 }
 
 class paquetes {
 
-    $vcs = [ 'git',  ]
-    package { $vcs: ensure => latest }
+    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie']
+    package { $essentials: ensure => $package_version }
 
-    package { 'fabric':
-        ensure => installed,
+    package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
+        ensure => present,
         provider => pip,
         require => Package['python-pip']
     }
@@ -131,9 +152,8 @@ class paquetes {
 
 class app_sources {
     $dirs = [ "/var/www", 
-              "/var/www/${project}",
-              "/var/www/${project}/media", 
-#              "/var/www/${project}/env",
+              "${project_path}",
+#              "${project_path}/env",
 ] 
     file { $dirs:
         ensure => "directory",
@@ -141,20 +161,28 @@ class app_sources {
         group  => "$user",
         mode   => 755,
     }
-    file { "/var/www/${project}/static": 
+    file { ["${project_path}/static",
+            "${project_path}/media",]: 
         ensure => "directory",
         mode => 777,
     }
     file { "/etc/puppet/hiera.yaml":
          ensure => "present",
     }
-    file { "/var/www/${project}/repo/":
+    # Default to play nice with vagrant and with first install
+    file { "${repo_path}/":
         ensure => link,
         target => '/repo/',
     } 
-    #vcsrepo { "/var/www/${project}/repo":
+    file { "/var/log/${project}":
+        ensure => 'directory',
+        owner  => 'www-data',
+        group  => 'admin',
+        mode   => 664
+    } 
+    #vcsrepo { "${repo_path}":
     #    #ensure => present,
-    #    ensure => latest,
+    #    ensure => $package_version,
     #    provider => git,
     #    source => "git://redmine.mainstorconcept.de/vtfx-II.git",
     #    revision => 'master',
@@ -169,11 +197,18 @@ class app_deploy {
         logoutput => true,
         #path    => ["/usr/bin", "/usr/sbin"]
     }
+    file { "/etc/sudoers.d/20-update":
+        content => "
+            Defaults!/usr/bin/puppet env_keep+=FACTER_PROJECTID
+            Defaults!/usr/bin/puppet env_keep+=FACTER_INTERNET
+            www-data ALL=(ALL) NOPASSWD:/usr/bin/puppet apply *
+        ",
+    }
 }
 
 class database {
     $postgres = [ 'postgresql', 'libpq-dev', ]
-    package { $postgres: ensure => latest }
+    package { $postgres: ensure => $package_version }
 
     class { 'postgresql::server':
         ip_mask_deny_postgres_user => '0.0.0.0/32',
@@ -187,11 +222,17 @@ class database {
         user     => $db_user,
         password => postgresql_password($db_user, $db_password),
     }
+    cron { 'postgres vacuuming':
+        command => "/usr/bin/vacuumdb --all --analyze --verbose > /tmp/postgres_vacuum_analyze.log 2>&1",
+        user    => 'postgres',
+        minute  => '1',
+        hour  => '5',
+    }
 }
 
 class uwsgi {
     package { ['uwsgi', 'uwsgi-plugin-python']:
-        ensure => installed,
+        ensure => present,
         require => Class['paquetes'],
     }
     file { "/etc/uwsgi/apps-available/${project}.ini":
@@ -254,16 +295,10 @@ class nginx {
 
 class timezone {
   package { "tzdata":
-    ensure => latest,
+    ensure => $package_version,
   }
   file { "/etc/localtime":
     require => Package["tzdata"],
     source => "file:///usr/share/zoneinfo/${tz}",
-  }
-}
-
-class extra_software {
-  package { 'vim':
-    ensure => latest,
   }
 }

@@ -1,4 +1,8 @@
-# Submodule
+# When the proyect already has the mpseed included
+    git submodule update --init --recursive
+
+# Adding it to a project
+## Submodule
 
 1. Use me as a submodule (optimal)
 
@@ -11,7 +15,7 @@
 3. Add custom config for production or development as vagrant-[prod|dev].rb on
    your base directory
 
-# Fork (deprecated)
+## Fork (deprecated)
 
 __WARNING:__When using remotes they are meant mainly for branches of the same
 project. So it maybe isn't the best idea

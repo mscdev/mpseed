@@ -6,7 +6,7 @@ CONFIG_FILE_PROD= "vagrant-prod.rb"
 CONFIG_FILE_DEV = "vagrant-dev.rb"
 
 # Default configs (override in config file only)
-PRODUCTION_MODE=true
+PUBLIC_NETWORK=true
 USE_GUI=false
 MAIN_CPU_COUNT=1
 MAIN_HOSTNAME="vtfx.dev.mainstorconcept.de"
@@ -17,6 +17,7 @@ EXTRA_MACHINES=0
 EXTRA_MACHINES_RAM=756
 EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
 #PROJECT_NAME="unnamedApp" # Should be overrided un CONFIG_FILE! Should be
+VM_NAME=""
 #a slug
 
 # The required config file are a directory higher, thats why ../ is prepended to
@@ -24,11 +25,15 @@ EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
 if File.exist?(CONFIG_FILE_DEV)
     puts "DEVELOPMENT: Loading settings from: #{CONFIG_FILE_DEV}"
     require_relative "../#{CONFIG_FILE_DEV}"
-else
+elsif File.exist?(CONFIG_FILE_PROD)
     puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
     require_relative "../#{CONFIG_FILE_PROD}"
+else
+    puts "ERROR: You suck! Read the README man"
+    puts "No PRODUCTION or DEVELOPMENT config file found on current dir"
+    abort
 end
-puts "\nPRODUCTION_MODE: #{PRODUCTION_MODE}"
+puts "\nPUBLIC_NETWORK: #{PUBLIC_NETWORK}"
 puts "USE_GUI: #{USE_GUI}"
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -41,20 +46,20 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         vb.customize ["modifyvm", :id, "--memory", EXTRA_MACHINES_RAM]
     end
 
-    config.vm.synced_folder "../", "/repo"
+    config.vm.synced_folder "./", "/repo"
 
     config.vm.define "main", primary: true do |main|
         main.vm.box = "ubuntu/trusty64"
         main.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
         config.vm.provider :virtualbox do |vb| 
-            vb.name = PROJECT_NAME
+            vb.name = "#{PROJECT_NAME}#{VM_NAME}"
             vb.customize ["modifyvm", :id, "--memory", MAIN_RAM]
             vb.customize ["modifyvm", :id, "--ioapic", "on"]
             vb.customize ["modifyvm", :id, "--cpus", MAIN_CPU_COUNT]
         end
         main.vm.hostname=MAIN_HOSTNAME
 
-        if PRODUCTION_MODE == true
+        if PUBLIC_NETWORK == true
             # In production mode configure a 'public' ip addres and confugure
             # the fucking gateway when provisioning. Don't forget to provision!
             #
@@ -66,17 +71,28 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         else
             # If not, just use the provided ip address for the private network
             main.vm.network :private_network, ip: MAIN_IP_ADDR
-            main.vm.network :forwarded_port, guest: 80, host: 8080
         end
 
-        main.vm.provision :shell, :path => "puppet-install.sh"
-        main.vm.provision :shell, :path => "puppet-modules.sh"
+        main.vm.provision :shell, :path => "mpseed/puppet-install.sh"
+        main.vm.provision :shell, :path => "mpseed/puppet-modules.sh"
 
         main.vm.provision :puppet do |puppet|
-            puppet.manifests_path = "manifests"
+            puppet.manifests_path = "mpseed/manifests"
             puppet.manifest_file  = "main.pp"
             puppet.facter  = {"projectid" => PROJECT_NAME}
-            puppet.options  = "--verbose"
+            puppet.options  = "--debug"
+        end
+        if File.exists?(File.expand_path(File.join(File.dirname(__FILE__), "./puppet_extras.pp")))
+
+        main.vm.provision :puppet do |puppet|
+            puppet.manifests_path = "."
+            puppet.manifest_file  = "puppet_extras.pp"
+            puppet.facter  = {"projectid" => PROJECT_NAME}
+            puppet.options  = "--debug"
+        end
+
+        else
+            puts "INFO: No puppet_extras.pp file found. Skipping"
         end
     end 
 
