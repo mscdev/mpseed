@@ -63,5 +63,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
 
         main.vm.provision :shell, :path => "mpseed/bootstrap_simple_web_server.sh"
+        if defined? (EXTRA_PROVISION_SCRIPT)
+            puts "INFO: Running extra provision: #{EXTRA_PROVISION_SCRIPT}"
+            main.vm.provision :shell, :path => "#{EXTRA_PROVISION_SCRIPT}"
+        else
+            puts "INFO: No extra provision defined"
+        end
     end 
 end
