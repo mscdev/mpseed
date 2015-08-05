@@ -11,18 +11,34 @@ if $projectid == undef {
 $project = "${projectid}" 
 
 if $internet == 'false' {
+    if $version_dir == undef {
+      fail("Sorry man, you suck: 'version fact not defined' and internet fact == 'false'")
+    }
     notice("Trying to run puppet without internet connection")
-    $pip_packages_path = "/tmp/pip_packages"
+    #$project_path="${version_dir}"
+    $pip_packages_path = "${version_dir}/requirements/pip"
     $package_version = 'present'
-    $apt_update = false
-    $extra_pip_args = "--no-index --find-links ${pip_packages_path}"
+    #$apt_update = false
+    $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
+    $pip_requirements_file = "requirements_nointernet.txt"
+
+    exec {'apt-update': 
+      command => "${version_dir}/repo/install_deb_pkgs_no_internet.sh ${version_dir}/requirements/deb"
+    }
 }
 else {
     notice("Running puppet with internet connection")
+    #$project_path = "/var/www/${project}"
+    exec { "apt-update":
+        command => "/usr/bin/apt-get update"
+    }
     $package_version = 'latest'
-    $apt_update = true
-    $extra_pip_args = ''
+    #$apt_update = true
+    $extra_pip_args = '--upgrade'
+    $pip_requirements_file = "requirements.txt"
 }
+
+Exec["apt-update"] -> Package <| |>
 
 # Global variables
 $project_path = "/var/www/${project}" # Base dir
@@ -52,19 +68,21 @@ include nginx
 include uwsgi
 include timezone
 
-Class['apt'] -> Class['python']      
-Class['apt'] -> Class['paquetes']      
-Class['apt'] -> Class['database']      
-Class['apt'] -> Class['app_sources']   
-Class['apt'] -> Class['virtualenv']    
-Class['apt'] -> Class['app_deploy']    
-Class['apt'] -> Class['nginx']         
-Class['apt'] -> Class['uwsgi']         
-Class['apt'] -> Class['timezone']      
+#Class['apt']      -> Class['python']
+#Class['apt']      -> Class['paquetes']      
+#Class['python']   -> Class['virtualenv']
+#Class['paquetes'] -> Class['timezone']      
+#Class['paquetes'] -> Class['database']      
+#Class['paquetes'] -> Class['app_sources']   
+#Class['paquetes'] -> Class['nginx']         
+#Class['virtualenv'] -> Class['uwsgi']         
+#Class['uwsgi']    -> Class['app_deploy']    
+#
+#class { 'apt':
+#  always_apt_update    => $apt_update,
+#}
 
-class { 'apt':
-  always_apt_update    => $internet,
-}
+
 
 class { 'python':
     dev        => true, # install python-dev
@@ -89,7 +107,7 @@ class users {
       managehome => true,
       shell => "/bin/bash",
       password => $password_hash,
-      groups => ['sudo', 'vagrant'],
+      groups => ['sudo',] # 'vagrant'], On bare matal there is no vagrant
     }
     # SSH Keys
     file { "/home/$user/.ssh/":
@@ -111,15 +129,17 @@ class users {
                    \n${alias_run_puppet_extras}",
         mode   => 755,
     }
-    # Be nice with vagrant user too
-    file { "/home/vagrant/.bash_aliases":
-        ensure => "file",
-        owner  => "vagrant",
-        group  => "vagrant",
-        content  => "${alias_run_puppet}
-                   \n${alias_run_puppet_extras}",
-        mode   => 755,
-    }
+
+    # NO VAGRANT on barematal machines
+    ## Be nice with vagrant user too
+    #file { "/home/vagrant/.bash_aliases":
+    #    ensure => "file",
+    #    owner  => "vagrant",
+    #    group  => "vagrant",
+    #    content  => "${alias_run_puppet}
+    #               \n${alias_run_puppet_extras}",
+    #    mode   => 755,
+    #}
 }
 
 
@@ -127,26 +147,30 @@ class virtualenv {
     python::virtualenv { "${project_path}/env":
         ensure       => present,
         version      => 'system',
-        requirements => "${repo_path}/webapp/requirements.txt",
         distribute   => false,
         owner        => "www-data",
         group        => "$user",
-        timeout      => 100,
         require => [Class['app_sources'], Class['database']],
         before => Class['app_deploy'],
         extra_pip_args  => $extra_pip_args,
+    } ->
+    python::requirements { "${repo_path}/webapp/${pip_requirements_file}" :
+        virtualenv => "${project_path}/env",
+        owner      => "www-data",
+        group      => "$user",
+        forceupdate => true,
+        extra_pip_args => $extra_pip_args,
     }
 }
 
 class paquetes {
-
-    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie']
+    $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie', 'zip', 'unzip', 'ntp']
     package { $essentials: ensure => $package_version }
 
     package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
         ensure => present,
         provider => pip,
-        require => Package['python-pip']
+        require => [ Package['python-pip'], Package['python-dev'] ]
     }
 }
 
@@ -170,32 +194,25 @@ class app_sources {
          ensure => "present",
     }
     # Default to play nice with vagrant and with first install
-    file { "${repo_path}/":
-        ensure => link,
-        target => '/repo/',
-    } 
+    #file { "${repo_path}/":
+    #    ensure => link,
+    #    target => '/repo/',
+    #} 
     file { "/var/log/${project}":
         ensure => 'directory',
         owner  => 'www-data',
         group  => 'admin',
         mode   => 664
     } 
-    #vcsrepo { "${repo_path}":
-    #    #ensure => present,
-    #    ensure => $package_version,
-    #    provider => git,
-    #    source => "git://redmine.mainstorconcept.de/vtfx-II.git",
-    #    revision => 'master',
-    #    user => "$user",
-    #    require => Package['git']
-    #}
 }
 
 class app_deploy {
     exec {$fabric_local_deploy:
-        provider=> shell,
+        provider  => shell,
         logoutput => true,
-        #path    => ["/usr/bin", "/usr/sbin"]
+        timeout   => 0, 
+        #path     => ["/usr/bin", "/usr/sbin"]
+        require => [ Class['virtualenv'], Class['uwsgi'], Class['nginx'] ]
     }
     file { "/etc/sudoers.d/20-update":
         content => "
@@ -207,33 +224,35 @@ class app_deploy {
 }
 
 class database {
-    $postgres = [ 'postgresql', 'libpq-dev', ]
-    package { $postgres: ensure => $package_version }
+    if $unmodify_db == undef or $unmodify_db != 'True' {
+        $postgres = [ 'postgresql', 'libpq-dev', ]
+        package { $postgres: ensure => $package_version }
 
-    class { 'postgresql::server':
-        ip_mask_deny_postgres_user => '0.0.0.0/32',
-        ip_mask_allow_all_users    => '0.0.0.0/0',
-        listen_addresses           => '*',
-        #ipv4acls                   => ['hostssl all johndoe 192.168.0.0/24 cert'],
-        #manage_firewall            => true,
-        postgres_password          => 'postgres',
-    }
-    postgresql::server::db { $db_name:
-        user     => $db_user,
-        password => postgresql_password($db_user, $db_password),
-    }
-    cron { 'postgres vacuuming':
-        command => "/usr/bin/vacuumdb --all --analyze --verbose > /tmp/postgres_vacuum_analyze.log 2>&1",
-        user    => 'postgres',
-        minute  => '1',
-        hour  => '5',
+        class { 'postgresql::server':
+            ip_mask_deny_postgres_user => '0.0.0.0/32',
+            ip_mask_allow_all_users    => '0.0.0.0/0',
+            listen_addresses           => '*',
+            #ipv4acls                   => ['hostssl all johndoe 192.168.0.0/24 cert'],
+            #manage_firewall            => true,
+            postgres_password          => 'postgres',
+        }
+        postgresql::server::db { $db_name:
+            user     => $db_user,
+            password => postgresql_password($db_user, $db_password),
+        }
+        cron { 'postgres vacuuming':
+            command => "/usr/bin/vacuumdb --all --analyze --verbose > /tmp/postgres_vacuum_analyze.log 2>&1",
+            user    => 'postgres',
+            minute  => '1',
+            hour  => '5',
+        }
     }
 }
 
 class uwsgi {
     package { ['uwsgi', 'uwsgi-plugin-python']:
         ensure => present,
-        require => Class['paquetes'],
+        #  require => Class['paquetes'],
     }
     file { "/etc/uwsgi/apps-available/${project}.ini":
         ensure => present,
@@ -248,7 +267,21 @@ class uwsgi {
         ensure => link,
         target => "/etc/uwsgi/apps-available/${project}.ini",
         require => Package['uwsgi'],
-    } 
+    }
+    file { "/var/log/uwsgi/${project}-req.log":
+        ensure => present,
+        owner => 'www-data',
+        group => 'www-data',
+        mode => '0640',
+        require => Package['uwsgi'],
+    }
+    file { "/var/log/uwsgi/${project}-err.log":
+        ensure => present,
+        owner => 'www-data',
+        group => 'www-data',
+        mode => '0640',
+        require => Package['uwsgi'],
+    }
     service { 'uwsgi':
         ensure => running,
         provider => upstart,
@@ -263,7 +296,7 @@ class uwsgi {
 class nginx {
     package { 'nginx':
         ensure => present,
-        require => Class['paquetes'],
+        #require => Class['paquetes'],
     }
     file { "/etc/nginx/sites-available/${project}":
         ensure => file,
@@ -284,6 +317,13 @@ class nginx {
         target => "/etc/nginx/sites-available/${project}",
         require => Package['nginx'],
     } 
+    file { "/etc/nginx/locations.d":
+        ensure => directory,
+        owner => 'root',
+        group => 'root',
+        mode => '755',
+        require => Package['nginx'],
+    }
     service { 'nginx':
         ensure => running,
         enable => true,
