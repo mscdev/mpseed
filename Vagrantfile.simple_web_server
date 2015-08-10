@@ -18,8 +18,6 @@ else
     puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
     require_relative "../#{CONFIG_FILE_PROD}"
 end
-puts "PRODUCTION_MODE: #{PRODUCTION_MODE}"
-puts "USE_GUI: #{USE_GUI}"
 
 # Default configs (override in config file only)
 PRODUCTION_MODE=true if not defined? (PRODUCTION_MODE)
@@ -27,6 +25,9 @@ USE_GUI=false if not defined? (USE_GUI)
 MAIN_CPU_COUNT=1 if not defined? (MAIN_CPU_COUNT)
 MAIN_HOSTNAME="unnamed.dev.mainstorconcept.de" if not defined? (MAIN_HOSTNAME)
 MAIN_RAM=1024 if not defined? (MAIN_RAM)
+
+puts "PRODUCTION_MODE: #{PRODUCTION_MODE}"
+puts "USE_GUI: #{USE_GUI}"
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
