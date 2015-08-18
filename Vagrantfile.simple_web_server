@@ -5,14 +5,6 @@
 CONFIG_FILE_PROD= "vagrant-prod.rb"
 CONFIG_FILE_DEV = "vagrant-dev.rb"
 
-# Default configs (override in config file only)
-PRODUCTION_MODE=true
-USE_GUI=false
-MAIN_CPU_COUNT=1
-MAIN_HOSTNAME="vtfx.dev.mainstorconcept.de"
-MAIN_GATEWAY="172.20.1.254"
-MAIN_IP_ADDR="192.168.55.60"
-MAIN_RAM=1024
 #PROJECT_NAME="unnamedApp" # Should be overrided un CONFIG_FILE! Should be
 #a slug
 
@@ -26,7 +18,15 @@ else
     puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
     require_relative "../#{CONFIG_FILE_PROD}"
 end
-puts "\nPRODUCTION_MODE: #{PRODUCTION_MODE}"
+
+# Default configs (override in config file only)
+PRODUCTION_MODE=true if not defined? (PRODUCTION_MODE)
+USE_GUI=false if not defined? (USE_GUI)
+MAIN_CPU_COUNT=1 if not defined? (MAIN_CPU_COUNT)
+MAIN_HOSTNAME="unnamed.dev.mainstorconcept.de" if not defined? (MAIN_HOSTNAME)
+MAIN_RAM=1024 if not defined? (MAIN_RAM)
+
+puts "PRODUCTION_MODE: #{PRODUCTION_MODE}"
 puts "USE_GUI: #{USE_GUI}"
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
@@ -63,5 +63,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
 
         main.vm.provision :shell, :path => "mpseed/bootstrap_simple_web_server.sh"
+        if defined? (EXTRA_PROVISION_SCRIPT)
+            puts "INFO: Running extra provision: #{EXTRA_PROVISION_SCRIPT}"
+            main.vm.provision :shell, :path => "#{EXTRA_PROVISION_SCRIPT}"
+        else
+            puts "INFO: No extra provision defined"
+        end
     end 
 end
