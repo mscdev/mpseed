@@ -48,6 +48,13 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end
         main.vm.hostname=MAIN_HOSTNAME
 
+        if defined? (CUSTOM_SHARED_FOLDER)
+            puts "Using shared folder: #{CUSTOM_SHARED_FOLDER}"
+            config.vm.synced_folder "#{CUSTOM_SHARED_FOLDER}", "/shared"
+        else
+            puts "Skiping custom shared folder"
+        end
+
         if PRODUCTION_MODE == true
             # In production mode configure a 'public' ip addres and confugure
             # the fucking gateway when provisioning. Don't forget to provision!
