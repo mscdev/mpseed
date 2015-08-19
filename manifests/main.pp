@@ -109,15 +109,6 @@ class users {
       password => $password_hash,
       groups => ['sudo',] # 'vagrant'], On bare matal there is no vagrant
     }
-    # SSH Keys
-    file { "/home/$user/.ssh/":
-        ensure  => present,
-        owner   => "$user",
-        group   => "$user",
-        mode    => '0600',
-        source  =>"${inc_file_path}/ssh/",
-        recurse => true;
-    }
     file { "/home/$user/.bash_aliases":
         ensure => "file",
         owner  => "$user",
