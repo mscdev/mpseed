@@ -202,7 +202,7 @@ class app_sources {
         ensure => 'directory',
         owner  => 'www-data',
         group  => 'admin',
-        mode   => 664
+        mode   => 775
     } 
 }
 
