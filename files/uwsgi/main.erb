@@ -10,8 +10,9 @@ module = django.core.wsgi:get_wsgi_application()
 env = DJANGO_SETTINGS_MODULE=<%= @project %>.settings
 
 master = true
-processes = 2
-threads = 2
+processes = 10
+threads = 10
+thunder-lock = true
 
 socket = /run/uwsgi/app/<%= @project %>/socket 
 chown-socket = www-data:www-data
