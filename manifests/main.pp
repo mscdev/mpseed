@@ -10,6 +10,8 @@ if $projectid == undef {
 }
 $project = "${projectid}" 
 
+$pip_requirements_file = "requirements.txt"
+
 if $internet == 'false' {
     if $version_dir == undef {
       fail("Sorry man, you suck: 'version fact not defined' and internet fact == 'false'")
@@ -20,7 +22,6 @@ if $internet == 'false' {
     $package_version = 'present'
     #$apt_update = false
     $extra_pip_args = "--upgrade --no-index --find-links ${pip_packages_path}"
-    $pip_requirements_file = "requirements_nointernet.txt"
 
     exec {'apt-update': 
       command => "${version_dir}/repo/install_deb_pkgs_no_internet.sh ${version_dir}/requirements/deb"
@@ -35,7 +36,6 @@ else {
     $package_version = 'latest'
     #$apt_update = true
     $extra_pip_args = '--upgrade'
-    $pip_requirements_file = "requirements.txt"
 }
 
 Exec["apt-update"] -> Package <| |>
