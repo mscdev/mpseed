@@ -124,16 +124,39 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         end 
     end 
 
+
     (1..EXTRA_MACHINES).each do |i|
         config.vm.define "vte-#{i}" do |vte|
             puts "vte can only use virtualbox. No suse/sless11 lxc support yet"
-            vte.vm.provider :virtualbox do |vb| 
-                vte.vm.box = "suse/sless11"
-                vte.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/sles-11sp1-x64-vbox4210.box" 
-                vte.vm.hostname="vte-#{i}"
-                vte.vm.network :private_network, ip: "#{EXTRA_MACHINES_BASE_IP}#{i}"
+            vte.vm.synced_folder "./", "/repo", owner: "vagrant"
+            vte.vm.hostname="vte-#{i}"
+
+            if PROVIDER == "lxc"
+                vte.vm.box = "fgrehm/trusty64-lxc"
+                if PUBLIC_NETWORK == false
+                    vte.vm.network :private_network, ip: "#{MAIN_IP_ADDR}0#{i - 1}", lxc__bridge_name: "vlxcbr#{PROJECT_NAME}"
+                else
+                    puts ">> lxc provider does not support PUBLIC_NETWORK=true. It will not configure networks with this configuration"
+                end
+            else
+                vte.vm.provider :virtualbox do |vb| 
+                    vte.vm.box = "suse/sless11"
+                    vte.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/sles-11sp1-x64-vbox4210.box" 
+                    vte.vm.network :private_network, ip: "#{MAIN_IP_ADDR}0#{i - 1}"
+                end
             end
-            
+
+            vte.vm.provision "shell", run: "always", inline: "
+              echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+              service ssh restart
+              echo -e 'root\nroot' | sudo passwd root
+              yes | add-apt-repository ppa:fkrull/deadsnakes
+              apt-get update
+              yes | apt-get install python2.6
+              ln -sf /usr/bin/python2.6 /usr/bin/python
+              yes | apt-get install unzip gcc
+            "
+
         end 
     end 
 end
