@@ -146,14 +146,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 end
             end
 
-            vte.vm.provision "shell", run: "always", inline: "
+            vte.vm.provision "shell", inline: "
+              sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
               echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
               service ssh restart
               echo -e 'root\nroot' | sudo passwd root
               yes | add-apt-repository ppa:fkrull/deadsnakes
               apt-get update
-              yes | apt-get install python2.6
-              ln -sf /usr/bin/python2.6 /usr/bin/python
+              yes | apt-get install python2.4
+              ln -sf /usr/bin/python2.4 /usr/bin/python
               yes | apt-get install unzip gcc
             "
 
