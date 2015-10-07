@@ -54,8 +54,8 @@ $db_password = "${project}" # Mysql password for $db_user
 # Environment
 $domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtualenv directory
 $tz = 'Europe/Berlin' # Timezone
-$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} puppet apply --debug ${mpseed_path}/manifests/main.pp'"
-$alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} puppet apply --debug ${repo_path}/puppet_extras.pp'"
+$alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} FACTER_UNMODIFY_DB=False puppet apply --debug ${mpseed_path}/manifests/main.pp'"
+$alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} FACTER_UNMODIFY_DB=False puppet apply --debug ${repo_path}/puppet_extras.pp'"
 $fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=${repo_path}/fabfile.py"
 
 include users
