@@ -49,7 +49,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
         config.vm.define "main#{i}", primary: true do |main|
           
-            main.vm.synced_folder "./", "/repo", owner: "vagrant"
+            main.vm.synced_folder "./", "/repo", owner: "admin", group: "vagrant"
             main.vm.hostname=MAIN_HOSTNAME
 
             if PROVIDER == "lxc"
