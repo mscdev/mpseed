@@ -5,6 +5,20 @@
 CONFIG_FILE_PROD= "vagrant-prod.rb"
 CONFIG_FILE_DEV = "vagrant-dev.rb"
 
+# The required config file are a directory higher, thats why ../ is prepended to
+# require_relative function call
+if File.exist?(CONFIG_FILE_DEV)
+    puts "DEVELOPMENT: Loading settings from: #{CONFIG_FILE_DEV}"
+    require_relative "../#{CONFIG_FILE_DEV}"
+elsif File.exist?(CONFIG_FILE_PROD)
+    puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
+    require_relative "../#{CONFIG_FILE_PROD}"
+else
+    puts "ERROR: You suck! Read the README man"
+    puts "No PRODUCTION or DEVELOPMENT config file found on current dir"
+    abort
+end
+
 ################ OVERRIDE IN CONFIG FILE ONLY #######################       
 # USE_GUI=false
 ## NETWORK
@@ -25,19 +39,6 @@ EXTRA_MACHINES_BASE_IP="192.168.55.5" if not defined? (EXTRA_MACHINES_BASE_IP)
 ## EXTRAS
 #PROJECT_NAME="unnamedApp" # Declared in CONFIG_FILE! Should be a slug
 
-# The required config file are a directory higher, thats why ../ is prepended to
-# require_relative function call
-if File.exist?(CONFIG_FILE_DEV)
-    puts "DEVELOPMENT: Loading settings from: #{CONFIG_FILE_DEV}"
-    require_relative "../#{CONFIG_FILE_DEV}"
-elsif File.exist?(CONFIG_FILE_PROD)
-    puts "PRODUCTION: Loading setting from (#{CONFIG_FILE_PROD})"
-    require_relative "../#{CONFIG_FILE_PROD}"
-else
-    puts "ERROR: You suck! Read the README man"
-    puts "No PRODUCTION or DEVELOPMENT config file found on current dir"
-    abort
-end
 # puts "\nPUBLIC_NETWORK: #{PUBLIC_NETWORK}"
 # puts "USE_GUI: #{USE_GUI}"
 
