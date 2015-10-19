@@ -14,13 +14,14 @@ CONFIG_FILE_DEV = "vagrant-dev.rb"
 # MAIN_HOSTNAME="pepe.dev.mainstorconcept.de"
 # PROVIDER="lxc" # lxc or virtualbox
 ## HARDWARE
-MAIN_CPU_COUNT=1
-MAIN_RAM=1024
+MAIN_CPU_COUNT=1 if not defined? (MAIN_CPU_COUNT)
+MAIN_RAM=1024 if not defined? (MAIN_RAM)
 # MAIN_INSTANCES=1
 ## FOR DUMMIE MACHINES
-EXTRA_MACHINES=0
-EXTRA_MACHINES_RAM=756
-EXTRA_MACHINES_BASE_IP="192.168.55.5" # Last digit filled by the counter
+EXTRA_MACHINES=0 if not defined? (EXTRA_MACHINES)
+EXTRA_MACHINES_RAM=756 if not defined? (EXTRA_MACHINES_RAM)
+# Last digit filled by the counter
+EXTRA_MACHINES_BASE_IP="192.168.55.5" if not defined? (EXTRA_MACHINES_BASE_IP)
 ## EXTRAS
 #PROJECT_NAME="unnamedApp" # Declared in CONFIG_FILE! Should be a slug
 
