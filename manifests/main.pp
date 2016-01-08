@@ -56,6 +56,7 @@ $domain_name = "${project}.mainstorconcept.de" # Used in nginx, uwsgi and virtua
 $tz = 'Europe/Berlin' # Timezone
 $alias_run_puppet="alias pp='sudo FACTER_PROJECTID=${project} FACTER_UNMODIFY_DB=False puppet apply --debug ${mpseed_path}/manifests/main.pp'"
 $alias_run_puppet_extras="alias ppe='sudo FACTER_PROJECTID=${project} FACTER_UNMODIFY_DB=False puppet apply --debug ${repo_path}/puppet_extras.pp'"
+$alias_flower="alias flower='(cd /var/www/vtfx/repo/webapp && /var/www/vtfx/env/bin/celery --app=vtfx.celery:app flower)'"
 $fabric_local_deploy="fab deploy:host=${user}@localhost --password=${password} --fabfile=${repo_path}/fabfile.py"
 
 include users
@@ -117,7 +118,8 @@ class users {
                    \nalias run='${repo_path}/webapp/manage.py runserver 0.0.0.0:8888'
                    \nalias ff='${fabric_local_deploy}'
                    \n${alias_run_puppet}
-                   \n${alias_run_puppet_extras}",
+                   \n${alias_run_puppet_extras}
+                   \n${alias_flower}",
         mode   => 755,
     }
 
