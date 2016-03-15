@@ -15,6 +15,7 @@ threads = 10
 thunder-lock = true
 
 socket = /run/uwsgi/app/<%= @project %>/socket 
+buffer-size=32768
 chown-socket = www-data:www-data
 #vacuum = true
 
