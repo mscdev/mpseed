@@ -4,7 +4,6 @@ modules="\
 puppetlabs-apt 1.8.0:\
 puppetlabs-concat 1.2.3:\
 puppetlabs-postgresql 4.3.0:\
-puppetlabs-stdlib 4.6.0:\
 puppetlabs-vcsrepo 1.3.0:\
 stankevich-python 1.9.4"
 
@@ -15,6 +14,7 @@ fi
 
 if ! which puppet > /dev/null ; then
         echo "Puppet is NOT installed. Installing"
+        sudo apt-get update
         sudo apt-get install --assume-yes puppet
 else
         echo "Puppet already present"

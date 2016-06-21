@@ -160,10 +160,14 @@ class paquetes {
     $essentials = [ 'git', 'ifenslave', 'vim', 'ipython', 'screen', 'httpie', 'zip', 'unzip', 'ntp']
     package { $essentials: ensure => $package_version }
 
+    package { 'build-essential': ensure => 'present' }
+    package { 'libssl-dev': ensure => 'present' }
+    package { 'libffi-dev': ensure => 'present' }
+
     package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
         ensure => present,
         provider => pip,
-        require => [ Package['python-pip'], Package['python-dev'] ]
+        require => [ Package['python-pip'], Package['python-dev'], Package['build-essential'], Package['libssl-dev'], Package['libffi-dev']  ]
     }
 }
 
