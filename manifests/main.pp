@@ -169,7 +169,8 @@ class paquetes {
     
     # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
     exec {'install-python-pip':
-      command => "/usr/bin/easy_install --upgrade pip || /usr/local/bin/easy_install --upgrade pip",
+      command => "easy_install --upgrade pip",
+      path    => ['/usr/bin','/usr/local/bin'],
       require => [ Package['python-setuptools'], Package['python-dev'], Package['build-essential'], ]
     }
 
