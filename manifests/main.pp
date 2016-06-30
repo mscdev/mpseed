@@ -182,13 +182,13 @@ class paquetes {
     package { 'setuptools==23.1.0':
       provider => pip,
       ensure => 'present',
-      require => Package['pip']
+      require => Package['pip==8.1.2']
     }
     
     package { ['fabric==1.8.5', 'pycrypto==2.6.1', 'ecdsa==0.13']:
         ensure => 'present',
         provider => pip,
-        require => [ Package['setuptools'], Package['libssl-dev'], Package['libffi-dev']  ]
+        require => [ Package['setuptools==23.1.0'], Package['libssl-dev'], Package['libffi-dev']  ]
     }
 }
 
