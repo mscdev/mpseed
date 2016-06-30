@@ -163,11 +163,32 @@ class paquetes {
     package { 'build-essential': ensure => 'present' }
     package { 'libssl-dev': ensure => 'present' }
     package { 'libffi-dev': ensure => 'present' }
+    package { 'python-setuptools': ensure => 'present' }
 
+    # TODO: don't forget to check that this needs to work with internet=false (?)
+    
+    # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
+    exec {'install-python-pip':
+      command => "/usr/bin/easy_install --upgrade pip",
+      require => [ Package['python-setuptools'], Package['python-dev'], Package['build-essential'], ]
+    }
+
+    package { 'pip':
+      provider => pip,
+      ensure => 'latest',
+      require => [ Exec['install-python-pip'] ]
+    }
+
+    package { 'setuptools':
+      provider => pip,
+      ensure => 'latest',
+      require => Package['pip']
+    }
+    
     package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
         ensure => present,
         provider => pip,
-        require => [ Package['python-pip'], Package['python-dev'], Package['build-essential'], Package['libssl-dev'], Package['libffi-dev']  ]
+        require => [ Package['setuptools'], Package['libssl-dev'], Package['libffi-dev']  ]
     }
 }
 
