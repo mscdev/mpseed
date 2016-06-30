@@ -173,20 +173,20 @@ class paquetes {
       require => [ Package['python-setuptools'], Package['python-dev'], Package['build-essential'], ]
     }
 
-    package { 'pip':
+    package { 'pip==8.1.2':
       provider => pip,
-      ensure => 'latest',
+      ensure => 'present',
       require => [ Exec['install-python-pip'] ]
     }
 
-    package { 'setuptools':
+    package { 'setuptools==23.1.0':
       provider => pip,
-      ensure => 'latest',
+      ensure => 'present',
       require => Package['pip']
     }
     
-    package { ['fabric==1.8.1', 'pycrypto', 'ecdsa']:
-        ensure => 'latest',
+    package { ['fabric==1.8.5', 'pycrypto==2.6.1', 'ecdsa==0.13']:
+        ensure => 'present',
         provider => pip,
         require => [ Package['setuptools'], Package['libssl-dev'], Package['libffi-dev']  ]
     }
