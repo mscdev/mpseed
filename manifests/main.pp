@@ -165,32 +165,41 @@ class paquetes {
     package { 'libffi-dev': ensure => 'present' }
     package { 'python-setuptools': ensure => 'present' }
 
-    # TODO: don't forget to check that this needs to work with internet=false (?)
-    
-    # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
-    exec {'install-python-pip':
-      command => "easy_install --upgrade pip",
-      path    => ['/usr/bin','/usr/local/bin'],
-      require => [ Package['python-setuptools'], Package['python-dev'], Package['build-essential'], ]
-    }
 
-    package { 'pip==8.1.2':
-      provider => pip,
-      ensure => 'present',
-      require => [ Exec['install-python-pip'] ]
-    }
 
-    package { 'setuptools==23.1.0':
-      provider => pip,
-      ensure => 'present',
-      require => Package['pip==8.1.2']
-    }
-    
-    package { ['fabric==1.8.5', 'pycrypto==2.6.1', 'ecdsa==0.13']:
-        ensure => 'present',
+    if $internet == 'false' {
+      # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
+      exec {'install-python-pip':
+        command => "easy_install --upgrade pip==1.5.4",
+        path    => ['/usr/bin','/usr/local/bin'],
+        require => [ Package['python-setuptools'], Package['python-dev'], Package['build-essential'], ]
+      }
+
+      # python-pip original ubuntu version 1.5.4-1ubuntu3
+      #### package { 'pip==8.1.2':
+      package { 'pip==1.5.4':
         provider => pip,
-        require => [ Package['setuptools==23.1.0'], Package['libssl-dev'], Package['libffi-dev']  ]
+        ensure => 'present',
+        require => [ Exec['install-python-pip'] ]
+      }
+
+      # python-setuptools original ubuntu version 3.3-1ubuntu2
+      ### package { 'setuptools==23.1.0':
+      package { 'setuptools==3.3.1':
+        provider => pip,
+        ensure => 'present',
+        require => Package['pip==1.5.4']
+      }
+
+      # versions installed in older machines: Fabric==1.8.1 pycrypto==2.6.1 ecdsa==0.13
+      # package { ['fabric==1.8.5', 'pycrypto==2.6.1', 'ecdsa==0.13']:
+      package { ['fabric==1.8.1', 'pycrypto==2.6.1', 'ecdsa==0.13']:
+          ensure => 'present',
+          provider => pip,
+          require => [ Package['setuptools==3.3.1'], Package['libssl-dev'], Package['libffi-dev']  ]
+      }
     }
+    # else: all this packages should be installed when we installed this machine earlier with internet connection enabled
 }
 
 class app_sources {
