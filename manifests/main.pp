@@ -168,6 +168,7 @@ class paquetes {
 
 
     if $internet == 'true' {
+      notice("Installing pip and fabric with internet connection")
       # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
       exec {'install-python-pip':
         command => "easy_install --upgrade pip==1.5.4",
