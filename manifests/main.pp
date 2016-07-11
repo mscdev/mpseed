@@ -197,7 +197,7 @@ class paquetes {
       package { ['fabric==1.8.1', 'pycrypto==2.6.1', 'ecdsa==0.13']:
           ensure => 'present',
           provider => pip,
-          require => [ Package['setuptools==3.3.1'], Package['libssl-dev'], Package['libffi-dev']  ]
+          require => [ Package['setuptools==3.3'], Package['libssl-dev'], Package['libffi-dev']  ]
       }
     }
     # else: all this packages should be installed when we installed this machine earlier with internet connection enabled
