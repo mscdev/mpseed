@@ -167,7 +167,7 @@ class paquetes {
 
 
 
-    if $internet == 'false' {
+    if $internet == 'true' {
       # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
       exec {'install-python-pip':
         command => "easy_install --upgrade pip==1.5.4",
