@@ -186,7 +186,7 @@ class paquetes {
 
       # python-setuptools original ubuntu version 3.3-1ubuntu2
       ### package { 'setuptools==23.1.0':
-      package { 'setuptools==3.3.1':
+      package { 'setuptools==3.3':
         provider => pip,
         ensure => 'present',
         require => Package['pip==1.5.4']
