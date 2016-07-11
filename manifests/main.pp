@@ -167,7 +167,7 @@ class paquetes {
 
 
 
-    if $internet == 'true' {
+    if $internet != 'false' {
       notice("Installing pip and fabric with internet connection")
       # workaround for this one https://tickets.puppetlabs.com/browse/PUP-3709
       exec {'install-python-pip':
