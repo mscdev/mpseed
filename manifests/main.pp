@@ -194,7 +194,7 @@ class paquetes {
 
       # versions installed in older machines: Fabric==1.8.1 pycrypto==2.6.1 ecdsa==0.13
       # package { ['fabric==1.8.5', 'pycrypto==2.6.1', 'ecdsa==0.13']:
-      package { ['fabric==1.8.1', 'pycrypto==2.6.1', 'ecdsa==0.13']:
+      package { ['fabric==1.8.1', 'paramiko==1.15.2', 'pycrypto==2.6.1', 'ecdsa==0.13']:
           ensure => 'present',
           provider => pip,
           require => [ Package['setuptools==3.3'], Package['libssl-dev'], Package['libffi-dev']  ]
