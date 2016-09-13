@@ -31,11 +31,19 @@ end
 MAIN_CPU_COUNT=1 if not defined? (MAIN_CPU_COUNT)
 MAIN_RAM=1024 if not defined? (MAIN_RAM)
 # MAIN_INSTANCES=1
-## FOR DUMMIE MACHINES
-EXTRA_MACHINES=0 if not defined? (EXTRA_MACHINES)
-EXTRA_MACHINES_RAM=756 if not defined? (EXTRA_MACHINES_RAM)
+
+## FOR VTE MACHINES
+VTE_INSTANCES=0 if not defined? (VTE_INSTANCES)
+VTE_INSTANCES_RAM=756 if not defined? (VTE_INSTANCES_RAM)
 # Last digit filled by the counter
-EXTRA_MACHINES_BASE_IP="192.168.55.5" if not defined? (EXTRA_MACHINES_BASE_IP)
+VTE_INSTANCES_BASE_IP="192.168.55.5" if not defined? (VTE_INSTANCES_BASE_IP)
+
+## FOR BACKUP MACHINES
+BACKUP_INSTANCES=0 if not defined? (BACKUP_INSTANCES)
+BACKUP_INSTANCES_RAM=756 if not defined? (BACKUP_INSTANCES_RAM)
+# Last digit filled by the counter
+BACKUP_INSTANCES_BASE_IP="192.168.55.5" if not defined? (BACKUP_INSTANCES_BASE_IP)
+
 ## EXTRAS
 #PROJECT_NAME="unnamedApp" # Declared in CONFIG_FILE! Should be a slug
 
@@ -46,6 +54,10 @@ EXTRA_MACHINES_BASE_IP="192.168.55.5" if not defined? (EXTRA_MACHINES_BASE_IP)
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+config.ssh.username = 'vagrant'
+config.ssh.password = 'vagrant'
+config.ssh.insert_key = 'true'
 
     (1..MAIN_INSTANCES).each do |i|
 
@@ -85,8 +97,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
                 main.vm.provider :virtualbox do |vb| 
                     
                     vb.gui = USE_GUI 
-                    # Use VBoxManage to customize the VM
-                    vb.customize ["modifyvm", :id, "--memory", EXTRA_MACHINES_RAM]
                     # Sync time every 60 sec
                     vb.customize [ "guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-threshold", 60000 ]
 
@@ -127,7 +137,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end 
 
 
-    (1..EXTRA_MACHINES).each do |i|
+    (1..VTE_INSTANCES).each do |i|
         config.vm.define "vte-#{i}" do |vte|
             puts "vte can only use virtualbox. No suse/sless11 lxc support yet"
             vte.vm.synced_folder "./", "/repo", owner: "vagrant"
@@ -167,8 +177,42 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
               # make it possible to monitor tapes, store them in /LUN1/
               mkdir /LUN1
               touch /LUN1/.vtfxcontrol
+            "
 
-              # make it possible to use this vte as a tape_replication machine
+        end 
+    end 
+
+
+    (1..BACKUP_INSTANCES).each do |i|
+        config.vm.define "backup-#{i}" do |backup|
+            backup.vm.hostname="backup-#{i}"
+
+            if PROVIDER == "lxc"
+                backup.vm.box = "fgrehm/trusty64-lxc"
+                if PUBLIC_NETWORK == false
+                    backup.vm.network :private_network, ip: "#{MAIN_IP_ADDR}1#{i - 1}", lxc__bridge_name: "vlxcbr#{PROJECT_NAME}"
+                else
+                    puts ">> lxc provider does not support PUBLIC_NETWORK=true. It will not configure networks with this configuration"
+                end
+            else
+                backup.vm.provider :virtualbox do |vb| 
+                    backup.vm.box = "suse/sless11"
+                    backup.vm.box_url = "http://puppet-vagrant-boxes.puppetlabs.com/sles-11sp1-x64-vbox4210.box" 
+                    backup.vm.network :private_network, ip: "#{MAIN_IP_ADDR}0#{i - 1}"
+                end
+            end
+
+            backup.vm.provision "shell", inline: "
+              # login root:root from ssh (for agents implant/restart)
+              sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
+              echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+              service ssh restart
+              echo -e 'root\nroot' | sudo passwd root
+
+              apt-get update
+
+              # make it possible to use this backup as a tape_replication machine
+              mkdir /dlm_vtfx-rep
               yes | apt-get install rsync
               grep -q -F 'RSYNC_ENABLE=true' /etc/default/rsync || echo 'RSYNC_ENABLE=true' >> /etc/default/rsync
               (
@@ -188,7 +232,10 @@ EOF
               ) > /etc/rsyncd.conf
               service rsync restart
             "
+        end
+    end
 
-        end 
-    end 
+
+
+
 end
