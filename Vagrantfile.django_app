@@ -149,15 +149,44 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             end
 
             vte.vm.provision "shell", inline: "
-              sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
-              echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
-              service ssh restart
-              echo -e 'root\nroot' | sudo passwd root
+              # Use python 2.4
               yes | add-apt-repository ppa:fkrull/deadsnakes
               apt-get update
               yes | apt-get install python2.4
               ln -sf /usr/bin/python2.4 /usr/bin/python
-              yes | apt-get install unzip gcc
+
+              # not sure why do we need this 3 packages...
+              yes | apt-get install unzip gcc zip
+
+              # login root:root from ssh (for agents implant/restart)
+              sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
+              echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+              service ssh restart
+              echo -e 'root\nroot' | sudo passwd root
+
+              # make it possible to monitor tapes, store them in /LUN1/
+              mkdir /LUN1
+              touch /LUN1/.vtfxcontrol
+
+              # make it possible to use this vte as a tape_replication machine
+              yes | apt-get install rsync
+              grep -q -F 'RSYNC_ENABLE=true' /etc/default/rsync || echo 'RSYNC_ENABLE=true' >> /etc/default/rsync
+              (
+                cat <<'EOF'
+                  transfer logging = true
+                  log format = %h %o %f %l %b
+                  log file = /var/log/rsyncd.log
+                  pid file = /var/run/rsyncd.pid
+                  port = 54321
+                  uid = root
+                  gid = root
+
+                  [dlm_vtfx-rep]
+                      path = /dlm_vtfx-rep
+                      read only = no
+EOF
+              ) > /etc/rsyncd.conf
+              service rsync restart
             "
 
         end 
