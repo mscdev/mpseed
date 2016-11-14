@@ -51,6 +51,7 @@ server {
 
             uwsgi_pass django;
             include uwsgi_params;
+            uwsgi_read_timeout 300;
         }
 
 
